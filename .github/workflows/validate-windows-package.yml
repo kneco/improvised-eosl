@@ -1,0 +1,39 @@
+name: Validate Windows package
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run policy tests
+        shell: pwsh
+        run: dotnet run --project tests/ImprovisedEosl.Spike.Tests/ImprovisedEosl.Spike.Tests.csproj
+
+      - name: Build and verify Windows distribution
+        shell: pwsh
+        run: ./scripts/publish-dist.ps1 -Version ci-${{ github.run_number }}
+
+      - name: Upload validated ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-package-${{ github.run_number }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 3
