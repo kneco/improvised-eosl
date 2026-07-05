@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Improvised EOSL discovery test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    button { padding: 6px 10px; }
+    pre { background: #f3f3f3; padding: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Discovery test</h1>
+  <p>
+    This page calls <code>window.showModalDialog</code>. If this origin is not allowed,
+    the first click should trigger the compatibility permission prompt and return
+    <code>undefined</code>.
+  </p>
+  <button id="call">Call window.showModalDialog</button>
+  <pre id="result">No result yet.</pre>
+
+  <script>
+    document.querySelector("#call").addEventListener("click", () => {
+      const value = window.showModalDialog(
+        "dialog.html",
+        { id: 999, name: "discovery-test" },
+        "dialogWidth:720px;dialogHeight:520px;center:yes"
+      );
+      document.querySelector("#result").textContent = JSON.stringify(value);
+    });
+  </script>
+</body>
+</html>

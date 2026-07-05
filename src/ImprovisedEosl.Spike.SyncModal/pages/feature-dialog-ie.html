@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog IE feature dialog</title>
+  <style>
+    html, body { min-height: 100%; }
+    body { font-family: Arial, sans-serif; margin: 16px; line-height: 1.35; }
+    input[type=button] { padding: 5px 10px; margin-right: 8px; }
+    textarea { display: block; width: 95%; height: 80px; margin: 8px 0; }
+    pre { background: #f3f3f3; padding: 10px; white-space: pre-wrap; }
+    .scroll-probe { height: 900px; border-top: 1px solid #cccccc; margin-top: 16px; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>IE feature dialog</h1>
+  <p>Move or resize this dialog if the case is testing those behaviors, then return.</p>
+  <input type="button" value="Return measurements" onclick="returnMeasurements()">
+  <input type="button" value="Cancel" onclick="cancelDialog()">
+  <label for="notes">Manual notes</label>
+  <textarea id="notes"></textarea>
+  <pre id="measurement"></pre>
+  <div class="scroll-probe">Scroll probe content for scroll feature checks.</div>
+
+  <script>
+    var args = window.dialogArguments || {};
+
+    function valueOrBlank(value) {
+      return value === undefined || value === null ? "" : String(value);
+    }
+
+    function measureText(stage) {
+      var doc = document.documentElement || {};
+      var body = document.body || {};
+      return "stage=" + stage +
+        ";caseId=" + valueOrBlank(args.caseId) +
+        ";features=" + valueOrBlank(args.features) +
+        ";screenLeft=" + valueOrBlank(window.screenLeft) +
+        ";screenTop=" + valueOrBlank(window.screenTop) +
+        ";outerWidth=" + valueOrBlank(window.outerWidth) +
+        ";outerHeight=" + valueOrBlank(window.outerHeight) +
+        ";clientWidth=" + valueOrBlank(doc.clientWidth || body.clientWidth) +
+        ";clientHeight=" + valueOrBlank(doc.clientHeight || body.clientHeight) +
+        ";screenWidth=" + valueOrBlank(window.screen ? window.screen.width : "") +
+        ";screenHeight=" + valueOrBlank(window.screen ? window.screen.height : "") +
+        ";parentScreenLeft=" + valueOrBlank(args.parentScreenLeft) +
+        ";parentScreenTop=" + valueOrBlank(args.parentScreenTop);
+    }
+
+    function returnMeasurements() {
+      window.returnValue =
+        measureText("close") +
+        ";notes=" + valueOrBlank(document.getElementById("notes").value);
+      window.close();
+    }
+
+    function cancelDialog() {
+      window.returnValue = "cancelled";
+      window.close();
+    }
+
+    document.getElementById("measurement").innerHTML = measureText("load");
+  </script>
+</body>
+</html>

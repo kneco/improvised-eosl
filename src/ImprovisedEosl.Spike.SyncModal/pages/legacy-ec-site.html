@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>レガシーEC互換サンプル</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f0f0f0;
+      color: #111;
+      font-family: "MS PGothic", "Yu Gothic UI", sans-serif;
+    }
+
+    header {
+      padding: 16px;
+      border: 3px solid #000;
+      background: #003366;
+      color: #fff;
+      text-align: center;
+    }
+
+    header h1 { margin: 0 0 6px; font-size: 24px; }
+    header p { margin: 0; }
+
+    .scope {
+      margin: 16px 0;
+      padding: 10px 12px;
+      border: 2px solid #a85b00;
+      background: #fff5c7;
+    }
+
+    .scope p { margin: 4px 0; }
+    .supported { color: #086b2d; font-weight: bold; }
+    .unsupported { color: #775600; font-weight: bold; }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .product {
+      padding: 14px;
+      border: 2px solid #bbb;
+      background: #fff;
+      text-align: center;
+    }
+
+    .product h2 { margin: 0 0 8px; color: #003366; font-size: 18px; }
+    .price { margin: 10px 0; color: #c40000; font-size: 18px; font-weight: bold; }
+
+    button {
+      padding: 8px 13px;
+      border: 2px solid #b34a00;
+      background: #e65f00;
+      color: #fff;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.secondary { border-color: #174f7d; background: #276b9e; }
+    button.danger { padding: 4px 8px; border-color: #870000; background: #b00000; font-size: 12px; }
+
+    .badge {
+      display: inline-block;
+      margin-left: 5px;
+      padding: 2px 5px;
+      border: 1px solid currentColor;
+      font-size: 10px;
+    }
+
+    .cart {
+      margin-top: 16px;
+      padding: 15px;
+      border: 3px solid #003366;
+      background: #fff;
+    }
+
+    .cart h2 { margin: 0 0 10px; color: #003366; }
+    #cart-items { min-height: 64px; padding: 8px; border: 1px solid #ccc; background: #f8f8f8; }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      padding: 7px;
+      border: 1px solid #ddd;
+      background: #fff;
+    }
+
+    .total { margin: 12px 0; text-align: right; color: #c40000; font-size: 20px; font-weight: bold; }
+    #message { min-height: 1.5em; margin: 12px 0 0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>レガシーECストア</h1>
+    <p>同期モーダル互換の比較サンプル</p>
+  </header>
+
+  <section class="scope" aria-label="互換範囲">
+    <p class="supported">対応: showModalDialog / dialogArguments / returnValue</p>
+    <p class="unsupported">対象外: window.openのIE固有feature / ActiveX / Trident表示</p>
+  </section>
+
+  <main>
+    <section class="products" aria-label="商品一覧">
+      <article class="product">
+        <h2>ノートパソコン</h2>
+        <p>最新型CPU搭載</p>
+        <div class="price">98,000円</div>
+        <button type="button" onclick="addToCart('ノートパソコン', 98000, 'prod001')">
+          カートに追加 <span class="badge">showModalDialog</span>
+        </button>
+      </article>
+      <article class="product">
+        <h2>キーボード</h2>
+        <p>メカニカル方式</p>
+        <div class="price">12,800円</div>
+        <button type="button" onclick="addToCart('キーボード', 12800, 'prod002')">
+          カートに追加 <span class="badge">showModalDialog</span>
+        </button>
+      </article>
+      <article class="product">
+        <h2>マウス</h2>
+        <p>ワイヤレス対応</p>
+        <div class="price">5,200円</div>
+        <button type="button" onclick="addToCart('マウス', 5200, 'prod003')">
+          カートに追加 <span class="badge">showModalDialog</span>
+        </button>
+      </article>
+      <article class="product">
+        <h2>USBハブ</h2>
+        <p>7ポート USB 3.0</p>
+        <div class="price">3,500円</div>
+        <button type="button" onclick="addToCart('USBハブ', 3500, 'prod004')">
+          カートに追加 <span class="badge">showModalDialog</span>
+        </button>
+      </article>
+    </section>
+
+    <section class="cart">
+      <h2>ショッピングカート</h2>
+      <button class="secondary" type="button" onclick="viewCartDetails()">
+        詳細を新しいウィンドウで表示 <span class="badge">window.open</span>
+      </button>
+      <div id="cart-items"><p>カートは空です</p></div>
+      <div class="total">合計: 0円</div>
+      <button type="button" onclick="checkout()">レジに進む <span class="badge">ActiveX風</span></button>
+      <p id="message" role="status"></p>
+    </section>
+  </main>
+
+  <script>
+    var cart = [];
+
+    function addToCart(productName, price, productId) {
+      var quantity = window.showModalDialog(
+        "legacy-ec-quantity-dialog.html",
+        { productName: productName, price: price, productId: productId },
+        "dialogWidth:400px;dialogHeight:250px;resizable:no"
+      );
+
+      if (typeof quantity === "undefined") {
+        setMessage("互換機能の許可後、もう一度カート追加を実行してください。");
+        return;
+      }
+      if (quantity === null || quantity === "") {
+        setMessage("カート追加をキャンセルしました。");
+        return;
+      }
+
+      quantity = parseInt(quantity, 10);
+      if (!Number.isFinite(quantity) || quantity < 1 || quantity > 99) {
+        setMessage("数量の戻り値が不正です。");
+        return;
+      }
+
+      cart.push({ id: productId, name: productName, price: price, quantity: quantity });
+      updateCartDisplay();
+      setMessage(productName + " を " + quantity + " 個カートに追加しました。");
+    }
+
+    function updateCartDisplay() {
+      var container = document.getElementById("cart-items");
+      container.replaceChildren();
+      var total = 0;
+
+      if (cart.length === 0) {
+        var empty = document.createElement("p");
+        empty.textContent = "カートは空です";
+        container.appendChild(empty);
+      }
+
+      cart.forEach(function (item, index) {
+        var itemTotal = item.price * item.quantity;
+        total += itemTotal;
+
+        var row = document.createElement("div");
+        row.className = "cart-item";
+        var description = document.createElement("span");
+        description.textContent = item.name + " x " + item.quantity + "個 / " + itemTotal.toLocaleString() + "円";
+        var remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "danger";
+        remove.textContent = "削除";
+        remove.onclick = function () { removeFromCart(index); };
+        row.append(description, remove);
+        container.appendChild(row);
+      });
+
+      document.querySelector(".total").textContent = "合計: " + total.toLocaleString() + "円";
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartDisplay();
+      setMessage("商品を削除しました。");
+    }
+
+    function viewCartDetails() {
+      if (cart.length === 0) {
+        setMessage("カートが空です。");
+        return;
+      }
+
+      var summary = cart.map(function (item) {
+        return item.name + " x " + item.quantity;
+      }).join("\n");
+      var popup = window.open("", "cartWindow", "width=600,height=400,toolbar=no,status=no,resizable=no");
+      if (popup) {
+        popup.document.body.textContent = summary;
+      }
+      setMessage("window.openはChromium標準動作です。IE固有featureの再現対象ではありません。");
+    }
+
+    function checkout() {
+      if (cart.length === 0) {
+        setMessage("カートが空です。");
+        return;
+      }
+      setMessage("ActiveXはMVP対象外です。このボタンは表示比較用です。");
+    }
+
+    function setMessage(message) {
+      document.getElementById("message").textContent = message;
+    }
+  </script>
+</body>
+</html>

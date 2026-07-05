@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Top-level close dummy</title></head>
+<body>
+  <h1>Dummy launcher</h1>
+  <p id="state">opening business window</p>
+  <script>
+    addEventListener("load", () => {
+      const child = window.open(
+        "top-level-close-business.html",
+        "topLevelCloseBusiness",
+        "width=720,height=520,status=yes,scrollbars=yes"
+      );
+      document.getElementById("state").textContent =
+        child ? "close requested" : "handoff pending";
+      window.close();
+    }, { once: true });
+  </script>
+</body>
+</html>

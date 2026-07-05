@@ -1,0 +1,147 @@
+<Window x:Class="ImprovisedEosl.Spike.SyncModal.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Improvised EOSL"
+        Icon="Assets/App.ico"
+        Width="1100"
+        Height="760"
+        AllowDrop="True"
+        PreviewDragOver="Window_PreviewDragOver"
+        PreviewDrop="Window_PreviewDrop">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition x:Name="DiagnosticsRow" Height="0" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition x:Name="BrowserCommandRow" Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="120" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="BackButton"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource BrowserCommandButtonStyle}"
+                    ToolTip="Back"
+                    AutomationProperties.Name="Back"
+                    Click="Back_Click"
+                    >
+                <Path Width="20" Height="20" Stretch="Uniform"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Data="{StaticResource BackIconGeometry}" />
+            </Button>
+            <Button x:Name="ForwardButton"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource BrowserCommandButtonStyle}"
+                    ToolTip="Forward"
+                    AutomationProperties.Name="Forward"
+                    Click="Forward_Click"
+                    >
+                <Path Width="20" Height="20" Stretch="Uniform"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Data="{StaticResource ForwardIconGeometry}" />
+            </Button>
+            <Button Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource BrowserCommandButtonStyle}"
+                    ToolTip="Reload"
+                    AutomationProperties.Name="Reload"
+                    Click="Reload_Click"
+                    >
+                <Path Width="20" Height="20" Stretch="Uniform"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Data="{StaticResource ReloadIconGeometry}" />
+            </Button>
+            <TextBox x:Name="AddressBox"
+                     Grid.Row="0"
+                     Grid.Column="3"
+                     Margin="0,0,4,0"
+                     Padding="6,4"
+                     KeyDown="AddressBox_KeyDown" />
+            <Button Grid.Row="0"
+                    Grid.Column="4"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource BrowserCommandButtonStyle}"
+                    ToolTip="Go"
+                    AutomationProperties.Name="Go"
+                    Click="Navigate_Click"
+                    >
+                <Path Width="20" Height="20" Stretch="Uniform"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Data="{StaticResource NavigateIconGeometry}" />
+            </Button>
+            <Button x:Name="ApplicationSettingsButton"
+                    Grid.Row="0"
+                    Grid.Column="5"
+                    Margin="0,0,4,0"
+                    Style="{StaticResource LabeledCommandButtonStyle}"
+                    Click="ApplicationSettings_Click">
+                <StackPanel Orientation="Horizontal">
+                    <Path Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Data="{StaticResource SettingsIconGeometry}" />
+                    <TextBlock x:Name="ApplicationSettingsText" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="DiagnosticsButton"
+                    Grid.Row="0"
+                    Grid.Column="6"
+                    Style="{StaticResource LabeledCommandButtonStyle}"
+                    Click="Diagnostics_Click">
+                <StackPanel Orientation="Horizontal">
+                    <Path Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="2" StrokeLineJoin="Round"
+                          Data="{StaticResource DiagnosticsIconGeometry}" />
+                    <TextBlock x:Name="DiagnosticsText" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <TextBlock x:Name="CompatibilityStatusText"
+                       Grid.Row="1"
+                       Grid.Column="0"
+                       Grid.ColumnSpan="7"
+                       Margin="0,6,0,0"
+                       FontWeight="SemiBold"
+                       Text="Compatibility: initializing" />
+        </Grid>
+
+        <Grid x:Name="ParentWebViewHost" Grid.Row="1">
+            <wv2:WebView2 x:Name="ParentWebView"
+                          AllowExternalDrop="False"
+                          Margin="8" />
+        </Grid>
+
+        <TextBox x:Name="LogBox"
+                 Grid.Row="2"
+                 Margin="8"
+                 Visibility="Collapsed"
+                 IsReadOnly="True"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 FontFamily="Consolas"
+                 TextWrapping="NoWrap" />
+    </Grid>
+</Window>

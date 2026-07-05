@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=11">
+  <title>window.open child measurement</title>
+  <style>
+    html, body { font-family: Segoe UI, sans-serif; margin: 0; min-height: 900px; }
+    main { padding: 16px; }
+    label { display: block; margin: 8px 0; }
+    select, input { min-width: 180px; }
+    button { min-height: 32px; margin-top: 12px; }
+    .scroll-marker { margin-top: 620px; padding: 12px; background: #ffe9bd; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1><code>window.open()</code> child</h1>
+    <p>Case: <strong id="case-id"></strong></p>
+    <p>Window name: <strong id="window-name"></strong></p>
+    <p id="opening-bounds"></p>
+    <p>Try interacting with the parent. If its tick continues and controls work, record modeless=yes.</p>
+    <label>Parent remained modeless:
+      <select id="parent-modeless"><option>unknown</option><option>yes</option><option>no</option></select>
+    </label>
+    <label>Resize observation:
+      <select id="resize-observation"><option>unknown</option><option>resizable</option><option>not resizable</option></select>
+    </label>
+    <label>Visible chrome / scrolling:
+      <input id="chrome-observation" type="text" placeholder="location/menu/toolbar/status/scrollbars">
+    </label>
+    <label>Named window reused:
+      <select id="reused"><option>unknown</option><option>yes</option><option>no</option></select>
+    </label>
+    <label>Notes:
+      <input id="notes" type="text">
+    </label>
+    <button type="button" onclick="returnObservation()">Return observation and close</button>
+    <div class="scroll-marker">Scroll marker: verify whether this can be reached with the requested scrollbar setting.</div>
+  </main>
+  <script>
+    function query(name) {
+      var match = new RegExp("(?:^|&)" + name + "=([^&]*)").exec(location.search.substring(1));
+      return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : "";
+    }
+
+    var caseId = query("case");
+    var opening = {
+      left: window.screenLeft,
+      top: window.screenTop,
+      outerWidth: window.outerWidth,
+      outerHeight: window.outerHeight,
+      clientWidth: document.documentElement.clientWidth,
+      clientHeight: document.documentElement.clientHeight
+    };
+    document.getElementById("case-id").innerHTML = caseId;
+    document.getElementById("window-name").innerHTML = window.name;
+    document.getElementById("opening-bounds").innerHTML = "Opening: " + opening.left + "," + opening.top + " " + opening.outerWidth + "x" + opening.outerHeight + " client=" + opening.clientWidth + "x" + opening.clientHeight;
+
+    function returnObservation() {
+      var result = {
+        caseId: caseId,
+        features: "",
+        returnedWindow: true,
+        initiallyClosed: false,
+        windowName: window.name,
+        parentModeless: document.getElementById("parent-modeless").value,
+        resizeObservation: document.getElementById("resize-observation").value,
+        chromeObservation: document.getElementById("chrome-observation").value,
+        reused: document.getElementById("reused").value,
+        notes: document.getElementById("notes").value,
+        openingLeft: opening.left,
+        openingTop: opening.top,
+        openingOuterWidth: opening.outerWidth,
+        openingOuterHeight: opening.outerHeight,
+        openingClientWidth: opening.clientWidth,
+        openingClientHeight: opening.clientHeight,
+        closingLeft: window.screenLeft,
+        closingTop: window.screenTop,
+        closingOuterWidth: window.outerWidth,
+        closingOuterHeight: window.outerHeight,
+        closingClientWidth: document.documentElement.clientWidth,
+        closingClientHeight: document.documentElement.clientHeight
+      };
+      if (window.opener && window.opener.recordWindowOpenResult) {
+        window.opener.recordWindowOpenResult(result);
+      }
+      window.close();
+    }
+  </script>
+</body>
+</html>

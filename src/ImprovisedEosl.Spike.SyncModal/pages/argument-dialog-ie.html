@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog IE argument dialog</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 18px; line-height: 1.35; }
+    input[type=button] { padding: 5px 10px; }
+    pre { background: #f3f3f3; padding: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Argument boundary dialog</h1>
+  <p>Confirm the received type, length, and suffix, then return the measurement.</p>
+  <input type="button" value="Return measurement" onclick="returnMeasurement()">
+  <pre id="measurement"></pre>
+
+  <script>
+    function inspectArguments() {
+      var args = window.dialogArguments;
+      var kind = typeof args;
+      var value = null;
+
+      if (kind === "string") {
+        value = args;
+      } else if (args && typeof args.payload === "string") {
+        kind = "object";
+        value = args.payload;
+      } else if (args && typeof args.length === "number" && typeof args[0] === "string") {
+        kind = "array";
+        value = args[0];
+      }
+
+      if (value === null) {
+        return "kind=" + kind + ";receivedLength=unavailable;suffix=unavailable";
+      }
+
+      return "kind=" + kind +
+        ";receivedLength=" + value.length +
+        ";suffix=" + value.substring(Math.max(0, value.length - 20));
+    }
+
+    var measurement = inspectArguments();
+    document.getElementById("measurement").innerHTML = measurement;
+
+    function returnMeasurement() {
+      window.returnValue = measurement;
+      window.close();
+    }
+  </script>
+</body>
+</html>

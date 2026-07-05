@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=11">
+  <title>window.open feature reference</title>
+  <style>
+    body { font-family: Segoe UI, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #bbb; padding: 6px; text-align: left; }
+    th { background: #eee; }
+    button { min-height: 28px; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 120px; }
+    #parent-tick { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1><code>window.open()</code> feature reference</h1>
+  <p>Parent tick: <span id="parent-tick">0</span>. It must continue while a child is open.</p>
+  <table>
+    <thead>
+      <tr><th>Case</th><th>Feature string</th><th>Action</th><th>Status</th></tr>
+    </thead>
+    <tbody id="case-rows"></tbody>
+  </table>
+  <h2>Last result</h2>
+  <textarea id="last-result" readonly></textarea>
+  <h2>Checklist rows</h2>
+  <textarea id="checklist-rows" readonly></textarea>
+  <h2>Result history JSON</h2>
+  <textarea id="result-history" readonly></textarea>
+  <script>
+    var base = "width=640,height=480,left=120,top=80";
+    var cases = [
+      ["omitted", base, "windowOpenOmitted"],
+      ["resizable-yes", base + ",resizable=yes", "windowOpenResizableYes"],
+      ["resizable-no", base + ",resizable=no", "windowOpenResizableNo"],
+      ["scrollbars-yes", base + ",scrollbars=yes", "windowOpenScrollbarsYes"],
+      ["scrollbars-no", base + ",scrollbars=no", "windowOpenScrollbarsNo"],
+      ["location-yes", base + ",location=yes", "windowOpenLocationYes"],
+      ["location-no", base + ",location=no", "windowOpenLocationNo"],
+      ["menubar-yes", base + ",menubar=yes", "windowOpenMenubarYes"],
+      ["menubar-no", base + ",menubar=no", "windowOpenMenubarNo"],
+      ["toolbar-yes", base + ",toolbar=yes", "windowOpenToolbarYes"],
+      ["toolbar-no", base + ",toolbar=no", "windowOpenToolbarNo"],
+      ["status-yes", base + ",status=yes", "windowOpenStatusYes"],
+      ["status-no", base + ",status=no", "windowOpenStatusNo"],
+      ["fullscreen-yes", base + ",fullscreen=yes", "windowOpenFullscreenYes"],
+      ["fullscreen-no", base + ",fullscreen=no", "windowOpenFullscreenNo"],
+      ["channelmode-yes", base + ",channelmode=yes", "windowOpenChannelmodeYes"],
+      ["channelmode-no", base + ",channelmode=no", "windowOpenChannelmodeNo"],
+      ["all-no", base + ",resizable=no,scrollbars=no,location=no,menubar=no,toolbar=no,status=no,fullscreen=no,channelmode=no", "windowOpenAllNo"],
+      ["all-yes", base + ",resizable=yes,scrollbars=yes,location=yes,menubar=yes,toolbar=yes,status=yes,fullscreen=yes,channelmode=yes", "windowOpenAllYes"],
+      ["named-reuse-first", base + ",resizable=yes", "windowOpenNamedReuse"],
+      ["named-reuse-second", base + ",resizable=no", "windowOpenNamedReuse"]
+    ];
+    var history = [];
+    var opened = {};
+
+    function escapeHtml(value) {
+      return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
+    }
+
+    function renderCases() {
+      var html = "";
+      var i;
+      for (i = 0; i < cases.length; i++) {
+        html += "<tr><td>" + escapeHtml(cases[i][0]) + "</td><td><code>" + escapeHtml(cases[i][1]) +
+          "</code></td><td><button type=\"button\" onclick=\"runCase(" + i + ")\">Run</button></td>" +
+          "<td id=\"status-" + i + "\">pending</td></tr>";
+      }
+      document.getElementById("case-rows").innerHTML = html;
+    }
+
+    function runCase(index) {
+      var item = cases[index];
+      var url = "window-open-child-ie.html?case=" + encodeURIComponent(item[0]) + "&stamp=" + new Date().getTime();
+      var child = window.open(url, item[2], item[1]);
+      var returned = !!child;
+      var closed = returned ? !!child.closed : null;
+      opened[item[0]] = { index: index, returned: returned, initiallyClosed: closed, features: item[1] };
+      document.getElementById("status-" + index).innerHTML = returned ? (closed ? "returned closed proxy" : "open") : "blocked / null";
+      if (!returned || closed) {
+        recordWindowOpenResult({ caseId: item[0], returnedWindow: returned, initiallyClosed: closed, notes: "No usable child observation." });
+      }
+    }
+
+    window.recordWindowOpenResult = function (result) {
+      var state = opened[result.caseId] || {};
+      result.returnedWindow = state.returned === undefined ? result.returnedWindow : state.returned;
+      result.initiallyClosed = state.initiallyClosed === undefined ? result.initiallyClosed : state.initiallyClosed;
+      result.features = state.features || result.features || "";
+      history.push(result);
+      if (state.index !== undefined) {
+        document.getElementById("status-" + state.index).innerHTML = "done";
+      }
+      document.getElementById("last-result").value = JSON.stringify(result, null, 2);
+      document.getElementById("result-history").value = JSON.stringify(history, null, 2);
+      renderChecklist();
+    };
+
+    function value(result, key) {
+      return result && result[key] !== undefined && result[key] !== null ? result[key] : "";
+    }
+
+    function bounds(result, prefix) {
+      return value(result, prefix + "Left") + "," + value(result, prefix + "Top") + " " +
+        value(result, prefix + "OuterWidth") + "x" + value(result, prefix + "OuterHeight") +
+        " client=" + value(result, prefix + "ClientWidth") + "x" + value(result, prefix + "ClientHeight");
+    }
+
+    function renderChecklist() {
+      var rows = [];
+      var i;
+      for (i = 0; i < history.length; i++) {
+        var r = history[i];
+        rows.push("| " + value(r, "caseId") + " | `" + value(r, "features") + "` | " +
+          value(r, "returnedWindow") + " | " + value(r, "parentModeless") + " | " + value(r, "reused") + " | " +
+          bounds(r, "opening") + " | " + bounds(r, "closing") + " | " + value(r, "resizeObservation") + " | " +
+          value(r, "chromeObservation") + " | " + value(r, "notes") + " |");
+      }
+      document.getElementById("checklist-rows").value = rows.join("\r\n");
+    }
+
+    renderCases();
+    window.setInterval(function () {
+      var tick = document.getElementById("parent-tick");
+      tick.innerHTML = String(parseInt(tick.innerHTML, 10) + 1);
+    }, 500);
+  </script>
+</body>
+</html>

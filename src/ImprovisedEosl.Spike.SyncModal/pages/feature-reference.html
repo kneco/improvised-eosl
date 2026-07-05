@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog feature reference</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; line-height: 1.35; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #c8c8c8; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #eeeeee; }
+    button { padding: 4px 8px; margin-right: 6px; }
+    pre { background: #f3f3f3; padding: 12px; white-space: pre-wrap; }
+    textarea { box-sizing: border-box; width: 100%; height: 180px; font-family: Consolas, monospace; }
+    .features { font-family: Consolas, monospace; }
+    .done { background: #e8f5e9; }
+    .failed { background: #ffebee; }
+    .toolbar { margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>showModalDialog feature reference</h1>
+  <p>
+    Use this page in Edge IE mode or an old-IE reference environment, then repeat in the
+    WebView2 spike. The goal is to record observed behavior before applying parsed
+    features to the WPF child window.
+  </p>
+  <p>
+    Record OS, browser version, display scale, monitor layout, and visible dialog behavior
+    in <code>docs/dialog-feature-reference-checklist.md</code>.
+  </p>
+
+  <div class="toolbar">
+    <button id="run-next" type="button">Run next pending case</button>
+    <button id="clear-results" type="button">Clear page results</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Case</th>
+        <th>Feature string</th>
+        <th>Status</th>
+        <th>Run</th>
+      </tr>
+    </thead>
+    <tbody id="cases"></tbody>
+  </table>
+
+  <h2>Last result</h2>
+  <pre id="result">No case has run yet.</pre>
+
+  <h2>Result history JSON</h2>
+  <textarea id="history" readonly></textarea>
+
+  <h2>Checklist rows</h2>
+  <p>Paste these rows into <code>docs/dialog-feature-reference-checklist.md</code>, then fill any visual notes that JSON cannot capture.</p>
+  <textarea id="markdown" readonly></textarea>
+
+  <script>
+    (function () {
+      var cases = [
+        ["size-px", "dialogWidth:500px;dialogHeight:300px"],
+        ["size-unitless", "dialogWidth:500;dialogHeight:300"],
+        ["size-spaces", "dialogWidth: 500px ; dialogHeight : 300px"],
+        ["size-uppercase", "DIALOGWIDTH:500px;DIALOGHEIGHT:300px"],
+        ["size-invalid", "dialogWidth:abc;dialogHeight:def"],
+        ["size-decimal", "dialogWidth:500.8px;dialogHeight:300.2px"],
+        ["size-zero", "dialogWidth:0px;dialogHeight:0px"],
+        ["size-negative", "dialogWidth:-500px;dialogHeight:-300px"],
+        ["size-huge", "dialogWidth:5000px;dialogHeight:3000px"],
+        ["center-yes", "dialogWidth:500px;dialogHeight:300px;center:yes"],
+        ["center-no", "dialogWidth:500px;dialogHeight:300px;center:no"],
+        ["center-omitted", "dialogWidth:500px;dialogHeight:300px"],
+        ["position-explicit", "dialogWidth:500px;dialogHeight:300px;dialogLeft:120px;dialogTop:80px"],
+        ["position-center-and-explicit", "dialogWidth:500px;dialogHeight:300px;center:yes;dialogLeft:120px;dialogTop:80px"],
+        ["position-negative", "dialogWidth:500px;dialogHeight:300px;dialogLeft:-200px;dialogTop:-100px"],
+        ["position-offscreen", "dialogWidth:500px;dialogHeight:300px;dialogLeft:5000px;dialogTop:3000px"],
+        ["resizable-yes", "dialogWidth:500px;dialogHeight:300px;resizable:yes"],
+        ["resizable-no", "dialogWidth:500px;dialogHeight:300px;resizable:no"],
+        ["resizable-omitted", "dialogWidth:500px;dialogHeight:300px"],
+        ["status-yes", "dialogWidth:500px;dialogHeight:300px;status:yes"],
+        ["status-no", "dialogWidth:500px;dialogHeight:300px;status:no"],
+        ["scroll-yes", "dialogWidth:500px;dialogHeight:300px;scroll:yes"],
+        ["scroll-no", "dialogWidth:500px;dialogHeight:300px;scroll:no"],
+        ["duplicate-size", "dialogWidth:400px;dialogWidth:700px;dialogHeight:250px;dialogHeight:450px"],
+        ["equals-separator", "dialogWidth=500px;dialogHeight=300px;center=yes"],
+        ["unknown-mixed", "dialogWidth:500px;dialogHeight:300px;foo:bar;edge:legacy"]
+      ];
+      var results = [];
+
+      function getViewport() {
+        var doc = document.documentElement || {};
+        var body = document.body || {};
+        return {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          clientWidth: doc.clientWidth || body.clientWidth,
+          clientHeight: doc.clientHeight || body.clientHeight
+        };
+      }
+
+      function openCase(index) {
+        var item = cases[index];
+        var args = {
+          caseId: item[0],
+          features: item[1],
+          parentBefore: {
+            screenLeft: window.screenLeft,
+            screenTop: window.screenTop,
+            screenX: window.screenX,
+            screenY: window.screenY,
+            outerWidth: window.outerWidth,
+            outerHeight: window.outerHeight,
+            viewport: getViewport()
+          }
+        };
+        var started = new Date().getTime();
+        var result;
+        var value;
+        try {
+          value = window.showModalDialog("feature-dialog.html", args, item[1]);
+          result = {
+            caseId: item[0],
+            elapsedMs: new Date().getTime() - started,
+            features: item[1],
+            result: value
+          };
+        } catch (error) {
+          result = {
+            caseId: item[0],
+            elapsedMs: new Date().getTime() - started,
+            features: item[1],
+            error: String(error && error.message ? error.message : error)
+          };
+        }
+
+        saveResult(index, result);
+        document.getElementById("result").innerHTML = escapeText(JSON.stringify(result, null, 2));
+        renderCases();
+        renderHistory();
+      }
+
+      function saveResult(index, result) {
+        var i;
+        result.index = index;
+        for (i = 0; i < results.length; i += 1) {
+          if (results[i].index === index) {
+            results[i] = result;
+            return;
+          }
+        }
+        results.push(result);
+      }
+
+      function hasResult(index) {
+        var i;
+        for (i = 0; i < results.length; i += 1) {
+          if (results[i].index === index) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function runNextPending() {
+        var i;
+        for (i = 0; i < cases.length; i += 1) {
+          if (!hasResult(i)) {
+            openCase(i);
+            return;
+          }
+        }
+
+        document.getElementById("result").innerHTML = "All cases have page results.";
+      }
+
+      function clearResults() {
+        results = [];
+        document.getElementById("result").innerHTML = "No case has run yet.";
+        renderCases();
+        renderHistory();
+      }
+
+      function resultToMarkdownRow(result) {
+        var returned = result.result || {};
+        var initial = returned.initial;
+        var closing = returned.closing;
+        var notes = returned.notes || "";
+        var status = result.error
+          ? "error: " + result.error
+          : (result.result === undefined ? "canceled" : "returned");
+
+        return "| " + escapeMarkdown(result.caseId) +
+          " | `" + escapeMarkdown(result.features) + "`" +
+          " | " + escapeMarkdown(sizeText(initial && initial.outerWidth, initial && initial.outerHeight)) +
+          " | " + escapeMarkdown(sizeText(initial && initial.viewport && initial.viewport.clientWidth, initial && initial.viewport && initial.viewport.clientHeight)) +
+          " | " + escapeMarkdown(positionText(initial && initial.screenLeft, initial && initial.screenTop)) +
+          " | " +
+          " | " +
+          " | " + escapeMarkdown(status + "; closingOuter=" + sizeText(closing && closing.outerWidth, closing && closing.outerHeight) + "; " + notes) +
+          " |";
+      }
+
+      function sizeText(width, height) {
+        if ((width === undefined || width === null) && (height === undefined || height === null)) {
+          return "";
+        }
+
+        return valueOrBlank(width) + "x" + valueOrBlank(height);
+      }
+
+      function positionText(left, top) {
+        if ((left === undefined || left === null) && (top === undefined || top === null)) {
+          return "";
+        }
+
+        return valueOrBlank(left) + "," + valueOrBlank(top);
+      }
+
+      function renderHistory() {
+        var sorted = results.slice(0).sort(function (a, b) {
+          return a.index - b.index;
+        });
+        var rows = [];
+        var i;
+        document.getElementById("history").value = JSON.stringify(sorted, null, 2);
+
+        for (i = 0; i < sorted.length; i += 1) {
+          rows.push(resultToMarkdownRow(sorted[i]));
+        }
+        document.getElementById("markdown").value = rows.join("\r\n");
+      }
+
+      function escapeText(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function renderCases() {
+        var tbody = document.getElementById("cases");
+        var html = "";
+        var i;
+        for (i = 0; i < cases.length; i += 1) {
+          html += "<tr>" +
+            "<td>" + escapeText(cases[i][0]) + "</td>" +
+            "<td class=\"features\">" + escapeText(cases[i][1]) + "</td>" +
+            "<td id=\"status-" + i + "\">" + (hasResult(i) ? "done" : "pending") + "</td>" +
+            "<td><button type=\"button\" data-index=\"" + i + "\">Run</button></td>" +
+            "</tr>";
+        }
+        tbody.innerHTML = html;
+
+        var buttons = tbody.getElementsByTagName("button");
+        for (i = 0; i < buttons.length; i += 1) {
+          buttons[i].onclick = function () {
+            openCase(parseInt(this.getAttribute("data-index"), 10));
+          };
+        }
+
+        for (i = 0; i < cases.length; i += 1) {
+          if (hasResult(i)) {
+            var status = document.getElementById("status-" + i);
+            if (status && status.parentNode) {
+              status.parentNode.className = "done";
+            }
+          }
+        }
+      }
+
+      function valueOrBlank(value) {
+        return value === undefined || value === null ? "" : String(value);
+      }
+
+      function escapeMarkdown(value) {
+        return String(value)
+          .replace(/\r?\n/g, " ")
+          .replace(/\|/g, "\\|");
+      }
+
+      document.getElementById("run-next").onclick = runNextPending;
+      document.getElementById("clear-results").onclick = clearResults;
+      renderCases();
+      renderHistory();
+    }());
+  </script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Improvised EOSL parent spike</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    button { margin-right: 8px; padding: 6px 10px; }
+    pre { background: #f3f3f3; padding: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Parent WebView2</h1>
+  <p>
+    This page calls the compatibility shim and the local-only <code>testProbe</code>.
+    The timestamp should stop changing while the synchronous call is blocked.
+  </p>
+  <p>Tick: <strong id="tick"></strong></p>
+  <button id="ping">Block for 3 seconds</button>
+  <button id="dialog">Open child dialog</button>
+  <button id="session">Open session dialog</button>
+  <button id="missing">Open missing dialog</button>
+  <button id="timeout">Open timeout dialog</button>
+  <button id="feature-reference">Open feature reference</button>
+  <button id="feature-reference-ie">Open IE feature reference</button>
+  <button id="argument-reference-ie">Open IE argument reference</button>
+  <button id="google">Open Google</button>
+  <pre id="result">No result yet.</pre>
+  <pre id="session-state"></pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const tick = document.querySelector("#tick");
+    const result = document.querySelector("#result");
+    const sessionState = document.querySelector("#session-state");
+    const logEvent = (message) => {
+      chrome.webview.hostObjects.sync.testProbe.LogEvent(message);
+    };
+
+    function setParentSessionValues(label) {
+      document.cookie = `ieCompatCookie=parent-${label}; path=/; SameSite=Lax`;
+      localStorage.setItem("ieCompatLocalStorage", `parent-${label}`);
+      sessionStorage.setItem("ieCompatSessionStorage", `parent-${label}`);
+    }
+
+    function readSessionValues() {
+      return {
+        cookie: document.cookie,
+        localStorage: localStorage.getItem("ieCompatLocalStorage"),
+        sessionStorage: sessionStorage.getItem("ieCompatSessionStorage")
+      };
+    }
+
+    function renderSessionState(prefix) {
+      sessionState.textContent = `${prefix}\n${JSON.stringify(readSessionValues(), null, 2)}`;
+    }
+
+    setParentSessionValues("initial");
+    renderSessionState("Initial parent session values");
+
+    setInterval(() => {
+      tick.textContent = new Date().toISOString();
+    }, 250);
+
+    document.querySelector("#ping").addEventListener("click", () => {
+      result.textContent = "Calling sync Ping...";
+      logEvent("parent Ping call starting");
+      const started = performance.now();
+      const value = chrome.webview.hostObjects.sync.testProbe.Ping("parent");
+      logEvent("parent Ping call returned");
+      result.textContent = `Ping returned after ${Math.round(performance.now() - started)}ms\n${value}`;
+    });
+
+    document.querySelector("#dialog").addEventListener("click", () => {
+      result.textContent = "Calling sync ShowDialog...";
+      logEvent("parent window.showModalDialog call starting");
+      const started = performance.now();
+      const value = window.showModalDialog(
+        "dialog.html",
+        { id: 123, name: "test" },
+        "dialogWidth:720px;dialogHeight:520px;center:yes"
+      );
+      logEvent("parent window.showModalDialog call returned");
+      result.textContent = `window.showModalDialog returned after ${Math.round(performance.now() - started)}ms\n${JSON.stringify(value)}`;
+    });
+
+    document.querySelector("#session").addEventListener("click", () => {
+      setParentSessionValues(`manual-${Date.now()}`);
+      const before = readSessionValues();
+      renderSessionState("Before session dialog");
+      logEvent(`parent session values before dialog: ${JSON.stringify(before)}`);
+
+      const started = performance.now();
+      const value = window.showModalDialog(
+        "dialog.html?session=1",
+        { id: 456, name: "session-test", parentBefore: before },
+        "dialogWidth:720px;dialogHeight:520px;center:yes"
+      );
+      const after = readSessionValues();
+      logEvent(`parent session values after dialog: ${JSON.stringify(after)}`);
+      result.textContent =
+        `session dialog returned after ${Math.round(performance.now() - started)}ms\n` +
+        JSON.stringify({ value, parentAfter: after }, null, 2);
+      renderSessionState("After session dialog");
+
+      setTimeout(() => {
+        const delayed = readSessionValues();
+        logEvent(`parent session values after delayed read: ${JSON.stringify(delayed)}`);
+        result.textContent += `\n\nDelayed parent session read\n${JSON.stringify(delayed, null, 2)}`;
+      }, 1000);
+    });
+
+    document.querySelector("#missing").addEventListener("click", () => {
+      result.textContent = "Calling missing dialog...";
+      logEvent("parent missing dialog call starting");
+      const started = performance.now();
+      const value = window.showModalDialog(
+        "missing-dialog.html",
+        { id: 404, name: "missing-test" },
+        "dialogWidth:720px;dialogHeight:520px;center:yes"
+      );
+      logEvent("parent missing dialog call returned");
+      result.textContent = `missing dialog returned after ${Math.round(performance.now() - started)}ms\n${JSON.stringify(value)}`;
+    });
+
+    document.querySelector("#timeout").addEventListener("click", () => {
+      result.textContent = "Calling timeout dialog...";
+      logEvent("parent timeout dialog call starting");
+      const started = performance.now();
+      const value = window.showModalDialog(
+        "timeout.html",
+        { id: 408, name: "timeout-test" },
+        "dialogWidth:720px;dialogHeight:520px;center:yes;timeoutMs:3000"
+      );
+      logEvent("parent timeout dialog call returned");
+      result.textContent = `timeout dialog returned after ${Math.round(performance.now() - started)}ms\n${JSON.stringify(value)}`;
+    });
+
+    document.querySelector("#google").addEventListener("click", () => {
+      logEvent("parent navigating to https://www.google.com/");
+      location.href = "https://www.google.com/";
+    });
+
+    document.querySelector("#feature-reference").addEventListener("click", () => {
+      logEvent("parent navigating to feature-reference.html");
+      location.href = "feature-reference.html";
+    });
+
+    document.querySelector("#feature-reference-ie").addEventListener("click", () => {
+      logEvent("parent navigating to feature-reference-ie.html");
+      location.href = "feature-reference-ie.html";
+    });
+
+    document.querySelector("#argument-reference-ie").addEventListener("click", () => {
+      logEvent("parent navigating to argument-reference-ie.html");
+      location.href = "argument-reference-ie.html";
+    });
+
+    if (params.get("auto") === "1") {
+      setTimeout(() => {
+        const runs = [];
+        for (let i = 1; i <= 3; i += 1) {
+          result.textContent = `Auto probe: calling window.showModalDialog run ${i}...`;
+          const started = performance.now();
+          const value = window.showModalDialog(
+            `dialog.html?auto=1&run=${i}`,
+            { id: 120 + i, name: `auto-test-${i}` },
+            "dialogWidth:720px;dialogHeight:520px;center:yes"
+          );
+          const elapsed = Math.round(performance.now() - started);
+          runs.push({ run: i, elapsed, value });
+          result.textContent = `Auto window.showModalDialog run ${i} returned after ${elapsed}ms\n${JSON.stringify(value)}`;
+        }
+
+        chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+          JSON.stringify({ runs })
+        );
+      }, 1000);
+    }
+
+    if (params.get("sessionAuto") === "1") {
+      setTimeout(() => {
+        setParentSessionValues("auto");
+        const before = readSessionValues();
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "dialog.html?session=1&auto=1&run=session",
+          { id: 789, name: "session-auto", parentBefore: before },
+          "dialogWidth:720px;dialogHeight:520px;center:yes"
+        );
+        const after = readSessionValues();
+        setTimeout(() => {
+          const delayed = readSessionValues();
+          chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+            JSON.stringify({ elapsed: Math.round(performance.now() - started), value, before, after, delayed })
+          );
+        }, 1000);
+      }, 1000);
+    }
+
+    if (params.get("failureAuto") === "1") {
+      setTimeout(() => {
+        const missingStarted = performance.now();
+        const missing = window.showModalDialog(
+          "missing-dialog.html",
+          { id: 404, name: "missing-auto" },
+          "dialogWidth:720px;dialogHeight:520px;center:yes"
+        );
+
+        const timeoutStarted = performance.now();
+        const timeout = window.showModalDialog(
+          "timeout.html",
+          { id: 408, name: "timeout-auto" },
+          "dialogWidth:720px;dialogHeight:520px;center:yes;timeoutMs:3000"
+        );
+
+        chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+          JSON.stringify({
+            missingElapsed: Math.round(performance.now() - missingStarted),
+            timeoutElapsed: Math.round(performance.now() - timeoutStarted),
+            missing,
+            timeout
+          })
+        );
+      }, 1000);
+    }
+
+    if (params.get("featureAuto") === "1") {
+      setTimeout(() => {
+        const cases = [
+          ["size-px", "dialogWidth:500px;dialogHeight:300px"],
+          ["position-explicit", "dialogWidth:500px;dialogHeight:300px;dialogLeft:120px;dialogTop:80px"],
+          ["position-negative", "dialogWidth:500px;dialogHeight:300px;dialogLeft:-200px;dialogTop:-100px"],
+          ["position-offscreen", "dialogWidth:500px;dialogHeight:300px;dialogLeft:5000px;dialogTop:3000px"],
+          ["resizable-yes", "dialogWidth:500px;dialogHeight:300px;resizable:yes"],
+          ["resizable-no", "dialogWidth:500px;dialogHeight:300px;resizable:no"],
+          ["status-yes", "dialogWidth:500px;dialogHeight:300px;status:yes"],
+          ["scroll-no", "dialogWidth:500px;dialogHeight:300px;scroll:no"],
+          ["unknown-mixed", "dialogWidth:500px;dialogHeight:300px;foo:bar;edge:legacy"]
+        ];
+        const results = [];
+
+        for (const item of cases) {
+          const started = performance.now();
+          const value = window.showModalDialog(
+            "feature-dialog.html?autoReturn=1",
+            {
+              caseId: item[0],
+              features: item[1],
+              parentBefore: {
+                screenLeft: window.screenLeft,
+                screenTop: window.screenTop,
+                screenX: window.screenX,
+                screenY: window.screenY,
+                outerWidth: window.outerWidth,
+                outerHeight: window.outerHeight,
+                viewport: {
+                  innerWidth: window.innerWidth,
+                  innerHeight: window.innerHeight,
+                  clientWidth: document.documentElement.clientWidth,
+                  clientHeight: document.documentElement.clientHeight
+                }
+              }
+            },
+            item[1]
+          );
+          results.push({
+            caseId: item[0],
+            features: item[1],
+            elapsed: Math.round(performance.now() - started),
+            value
+          });
+        }
+
+        chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+          JSON.stringify({ featureResults: results })
+        );
+      }, 1000);
+    }
+
+    if (params.get("payloadAuto") === "1") {
+      setTimeout(() => {
+        const maxPayloadBytes = chrome.webview.hostObjects.sync.testProbe.GetMaxJsonPayloadBytes();
+        const oversizedArgumentsResult = window.showModalDialog(
+          "dialog.html?auto=1&run=oversized-arguments",
+          { payload: "x".repeat(maxPayloadBytes + 1) },
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const cyclicReturnResult = window.showModalDialog(
+          "payload-dialog.html?mode=cyclic-return",
+          null,
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const directStringMarker = "|END:5000|";
+        const directString = "x".repeat(5000 - directStringMarker.length) + directStringMarker;
+        const directStringResult = window.showModalDialog(
+          "payload-dialog.html?mode=argument-length",
+          directString,
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const maxFeatureBytes = chrome.webview.hostObjects.sync.testProbe.GetMaxDialogFeatureBytes();
+        const oversizedFeaturesResult = window.showModalDialog(
+          "dialog.html?auto=1&run=oversized-features",
+          null,
+          "x".repeat(maxFeatureBytes + 1)
+        );
+
+        const summary = {
+          oversizedArgumentsResult,
+          cyclicReturnResult,
+          directStringResult,
+          oversizedFeaturesResult
+        };
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (
+          !directStringResult ||
+          directStringResult.kind !== "string" ||
+          directStringResult.receivedLength !== 5000 ||
+          directStringResult.suffix !== "xxxxxxxxxx|END:5000|"
+        ) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("originGuardAuto") === "1") {
+      setTimeout(() => {
+        const spoofedResult = chrome.webview.hostObjects.sync.compatibilityBroker.ShowDialog(
+          "https://spoofed.example:443",
+          new URL("dialog.html", location.href).href,
+          JSON.stringify({ id: 999 }),
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const invalidTargetResult = window.showModalDialog(
+          "file:///C:/Windows/win.ini",
+          null,
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+          JSON.stringify({ spoofedResult, invalidTargetResult })
+        );
+      }, 1000);
+    }
+
+    if (params.get("navigationAuto") === "1") {
+      setTimeout(() => {
+        const navigationResult = window.showModalDialog(
+          "navigation-dialog.html",
+          null,
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        chrome.webview.hostObjects.sync.testProbe.FinishAutoRun(
+          JSON.stringify({ navigationResult })
+        );
+      }, 1000);
+    }
+
+    if (params.get("nestedAuto") === "1") {
+      setTimeout(() => {
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "nested-dialog.html?auto=1",
+          { id: 101, name: "nested-parent" },
+          "dialogWidth:620px;dialogHeight:420px"
+        );
+        const depthResult = window.showModalDialog(
+          "nested-dialog.html?auto=1&mode=depth&level=1",
+          { level: 1 },
+          "dialogWidth:420px;dialogHeight:260px"
+        );
+        const crossOriginResult = window.showModalDialog(
+          `http://localhost:${location.port}/nested-dialog.html?auto=1&mode=origin-guard`,
+          { id: 302, name: "cross-origin-child" },
+          "dialogWidth:420px;dialogHeight:260px"
+        );
+        const summary = {
+          elapsed: Math.round(performance.now() - started),
+          value,
+          depthResult,
+          crossOriginResult
+        };
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (
+          !value ||
+          value.accepted !== true ||
+          value.selectedId !== 101 ||
+          !value.nestedResult ||
+          value.nestedResult.accepted !== true ||
+          value.nestedResult.selectedId !== 202 ||
+          value.nestedResult.run !== "nested-leaf" ||
+          !depthResult ||
+          !depthResult.nestedResult ||
+          !depthResult.nestedResult.nestedResult ||
+          !depthResult.nestedResult.nestedResult.nestedResult ||
+          depthResult.nestedResult.nestedResult.nestedResult.level !== 4 ||
+          !depthResult.nestedResult.nestedResult.nestedResult.nestedResult ||
+          depthResult.nestedResult.nestedResult.nestedResult.nestedResult.kind !== "nested-dialog-depth-exceeded" ||
+          !crossOriginResult ||
+          crossOriginResult.nestedWasUndefined !== true
+        ) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("processFailureAuto") === "1") {
+      setTimeout(() => {
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "timeout.html",
+          { id: 598, name: "process-failure-auto" },
+          "dialogWidth:500px;dialogHeight:300px;timeoutMs:10000"
+        );
+        const summary = {
+          elapsed: Math.round(performance.now() - started),
+          value
+        };
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (
+          !value ||
+          value.kind !== "child-process-failure" ||
+          value.ok !== false ||
+          value.processFailedKind !== "RenderProcessExited" ||
+          summary.elapsed >= 10000
+        ) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("browserProcessFailureAuto") === "1") {
+      setTimeout(() => {
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (params.get("recovered") === "1") {
+          const summary = {
+            recovered: true,
+            recoveryCount: probe.GetBrowserRecoveryCount(),
+            location: location.href
+          };
+          if (summary.recoveryCount !== 1) {
+            probe.FailAutoRun(JSON.stringify(summary));
+            return;
+          }
+
+          probe.FinishAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        window.showModalDialog(
+          "timeout.html",
+          { id: 599, name: "browser-process-failure-auto" },
+          "dialogWidth:500px;dialogHeight:300px;timeoutMs:10000"
+        );
+        probe.FailAutoRun("browser process crash returned without recreating the parent WebView2");
+      }, 1000);
+    }
+
+    if (params.get("unresponsiveAuto") === "1") {
+      setTimeout(() => {
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "timeout.html",
+          { id: 600, name: "renderer-unresponsive-auto" },
+          "dialogWidth:500px;dialogHeight:300px;timeoutMs:60000"
+        );
+        const summary = {
+          elapsed: Math.round(performance.now() - started),
+          value
+        };
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (
+          !value ||
+          value.kind !== "child-process-failure" ||
+          value.ok !== false ||
+          value.processFailedKind !== "RenderProcessUnresponsive" ||
+          value.notificationCount < 1 ||
+          value.action !== "responsiveness-probe-timeout" ||
+          summary.elapsed >= 60000
+        ) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("parentUnresponsiveAuto") === "1" && params.get("recovered") === "1") {
+      setTimeout(() => {
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        const summary = {
+          recovered: true,
+          recoveryCount: probe.GetParentUnresponsiveRecoveryCount(),
+          location: location.href
+        };
+        if (summary.recoveryCount !== 1) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("nativeCloseAuto") === "1") {
+      setTimeout(() => {
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "timeout.html",
+          { id: 499, name: "native-close-auto" },
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const summary = {
+          elapsed: Math.round(performance.now() - started),
+          returnedUndefined: value === undefined
+        };
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (!summary.returnedUndefined) {
+          probe.FailAutoRun(JSON.stringify({ ...summary, value }));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("profileAuto") === "1") {
+      setTimeout(() => {
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        if (!probe.IsConfiguredShowModalDialog()) {
+          probe.FailAutoRun("configured profile grant was not active for the current origin");
+          return;
+        }
+
+        const started = performance.now();
+        const value = window.showModalDialog(
+          "dialog.html?auto=1&run=configured-profile",
+          { id: 901, name: "configured-profile-auto" },
+          "dialogWidth:500px;dialogHeight:300px"
+        );
+        const summary = {
+          configured: true,
+          elapsed: Math.round(performance.now() - started),
+          value
+        };
+        if (!value || value.accepted !== true || value.selectedId !== 901) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+
+    if (params.get("startupProfileAuto") === "1") {
+      setTimeout(() => {
+        const probe = chrome.webview.hostObjects.sync.testProbe;
+        const profileId = probe.GetSelectedStartupProfileId();
+        const configured = probe.IsConfiguredShowModalDialog();
+        const summary = {
+          profileId,
+          configured,
+          location: location.href
+        };
+        if (
+          profileId !== "automatic-configured-origin" ||
+          configured !== true ||
+          location.pathname !== "/parent.html"
+        ) {
+          probe.FailAutoRun(JSON.stringify(summary));
+          return;
+        }
+
+        probe.FinishAutoRun(JSON.stringify(summary));
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

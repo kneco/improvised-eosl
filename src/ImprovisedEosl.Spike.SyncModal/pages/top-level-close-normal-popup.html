@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Normal popup staging regression</title></head>
+<body>
+  <h1>Normal popup staging regression</h1>
+  <p id="state">opening</p>
+  <script>
+    addEventListener("load", () => {
+      const child = window.open(
+        "top-level-close-business.html",
+        "normalPopupAfterStaging",
+        "width=720,height=520,status=yes,scrollbars=yes"
+      );
+      if (!child) {
+        testProbe.FailAutoRun("normal popup staging returned no WindowProxy");
+        return;
+      }
+      document.getElementById("state").textContent = "host is observing child navigation";
+    }, { once: true });
+  </script>
+</body>
+</html>

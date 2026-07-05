@@ -1,0 +1,54 @@
+name: Release Windows package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run policy tests
+        shell: pwsh
+        run: dotnet run --project tests/ImprovisedEosl.Spike.Tests/ImprovisedEosl.Spike.Tests.csproj
+
+      - name: Build Windows distribution
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          ./scripts/publish-dist.ps1 -Version $version
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $assets = @(Get-ChildItem ./dist/*.zip)
+          if ($assets.Count -ne 1) {
+            throw "Expected exactly one release ZIP, found $($assets.Count)."
+          }
+          $asset = $assets[0].FullName
+          $notes = "./docs/releases/$tag.md"
+          if (-not (Test-Path -LiteralPath $notes)) {
+            throw "Release notes not found: $notes"
+          }
+
+          gh release create $tag $asset `
+            --repo $env:GITHUB_REPOSITORY `
+            --verify-tag `
+            --title "Improvised EOSL $tag" `
+            --notes-file $notes

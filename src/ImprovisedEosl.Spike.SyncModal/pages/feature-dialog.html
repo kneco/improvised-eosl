@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog feature dialog</title>
+  <style>
+    html, body { min-height: 100%; }
+    body { font-family: Arial, sans-serif; margin: 16px; line-height: 1.35; }
+    button { padding: 5px 10px; margin-right: 8px; }
+    textarea { display: block; width: 95%; height: 80px; margin: 8px 0; }
+    pre { background: #f3f3f3; padding: 10px; white-space: pre-wrap; }
+    .scroll-probe { height: 900px; border-top: 1px solid #cccccc; margin-top: 16px; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Feature dialog</h1>
+  <p>
+    Resize or move this window if the case is testing resize behavior. Add any visible
+    notes before closing.
+  </p>
+  <button id="return">Return measurements</button>
+  <button id="cancel">Cancel</button>
+  <label for="notes">Manual notes</label>
+  <textarea id="notes"></textarea>
+  <pre id="measurement"></pre>
+  <div class="scroll-probe">
+    Scroll probe content. This tall region helps detect whether <code>scroll</code>
+    changes dialog scrolling behavior.
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var args = window.dialogArguments || {};
+
+      function getViewport() {
+        var doc = document.documentElement || {};
+        var body = document.body || {};
+        return {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          clientWidth: doc.clientWidth || body.clientWidth,
+          clientHeight: doc.clientHeight || body.clientHeight,
+          scrollWidth: doc.scrollWidth || body.scrollWidth,
+          scrollHeight: doc.scrollHeight || body.scrollHeight
+        };
+      }
+
+      function measure(stage) {
+        return {
+          stage: stage,
+          caseId: args.caseId,
+          features: args.features,
+          screenLeft: window.screenLeft,
+          screenTop: window.screenTop,
+          screenX: window.screenX,
+          screenY: window.screenY,
+          outerWidth: window.outerWidth,
+          outerHeight: window.outerHeight,
+          viewport: getViewport(),
+          screen: {
+            width: window.screen ? window.screen.width : undefined,
+            height: window.screen ? window.screen.height : undefined,
+            availWidth: window.screen ? window.screen.availWidth : undefined,
+            availHeight: window.screen ? window.screen.availHeight : undefined
+          },
+          devicePixelRatio: window.devicePixelRatio,
+          parentBefore: args.parentBefore
+        };
+      }
+
+      function escapeText(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      var initial = measure("load");
+      document.getElementById("measurement").innerHTML = escapeText(JSON.stringify(initial, null, 2));
+
+      function returnMeasurements() {
+        var result = {
+          initial: initial,
+          closing: measure("close"),
+          notes: document.getElementById("notes").value
+        };
+
+        window.returnValue = result;
+        window.close();
+      }
+
+      document.getElementById("return").onclick = returnMeasurements;
+
+      document.getElementById("cancel").onclick = function () {
+        window.close();
+      };
+
+      if (params.get("autoReturn") === "1") {
+        setTimeout(returnMeasurements, 250);
+      }
+    }());
+  </script>
+</body>
+</html>

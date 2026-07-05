@@ -1,0 +1,23 @@
+<Window x:Class="ImprovisedEosl.Spike.SyncModal.NewWindowObservationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="window.open observation"
+        Width="720"
+        Height="520">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <wv2:WebView2 x:Name="ObservationWebView" Grid.Row="0" />
+        <Border x:Name="StatusArea"
+                Grid.Row="1"
+                Padding="8,4"
+                Background="#FFF2F2F2"
+                BorderBrush="#FFD0D0D0"
+                BorderThickness="0,1,0,0">
+            <TextBlock x:Name="StatusText" Text="Status" TextTrimming="CharacterEllipsis" />
+        </Border>
+    </Grid>
+</Window>

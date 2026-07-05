@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Improvised EOSL timeout child</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    pre { background: #f3f3f3; padding: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Timeout child</h1>
+  <p>This dialog intentionally stays open. The host should return a timeout failure.</p>
+  <p>Tick: <strong id="tick"></strong></p>
+  <pre id="args"></pre>
+
+  <script>
+    const tick = document.querySelector("#tick");
+    const args = document.querySelector("#args");
+    let ticks = 0;
+    setInterval(() => {
+      ticks += 1;
+      tick.textContent = `${new Date().toISOString()} (${ticks})`;
+    }, 250);
+    args.textContent = JSON.stringify(window.dialogArguments, null, 2);
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ImprovisedEosl.Spike.SyncModal</AssemblyName>
+    <RootNamespace>ImprovisedEosl.Spike.SyncModal</RootNamespace>
+    <ApplicationIcon>Assets\App.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3405.78" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ImprovisedEosl.Core\ImprovisedEosl.Core.csproj" />
+    <ProjectReference Include="..\ImprovisedEosl.ModalDialog\ImprovisedEosl.ModalDialog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\App.ico" />
+    <None Include="config\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="pages\*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

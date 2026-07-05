@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog IE feature reference</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; line-height: 1.35; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #c8c8c8; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #eeeeee; }
+    button { padding: 4px 8px; }
+    textarea { box-sizing: border-box; width: 100%; height: 150px; font-family: Consolas, monospace; }
+    .features { font-family: Consolas, monospace; }
+    .done { background: #e8f5e9; }
+  </style>
+</head>
+<body>
+  <h1>showModalDialog IE feature reference</h1>
+  <p>
+    This is the IE-mode-safe reference page. It uses per-row buttons and a simple
+    string return value from the child dialog.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Case</th>
+        <th>Feature string</th>
+        <th>Status</th>
+        <th>Run</th>
+      </tr>
+    </thead>
+    <tbody id="cases"></tbody>
+  </table>
+
+  <h2>Last result</h2>
+  <textarea id="last" readonly>No case has run yet.</textarea>
+
+  <h2>Checklist rows</h2>
+  <textarea id="rows" readonly></textarea>
+
+  <script>
+    var cases = [
+      ["size-px", "dialogWidth:500px;dialogHeight:300px"],
+      ["size-unitless", "dialogWidth:500;dialogHeight:300"],
+      ["size-invalid", "dialogWidth:abc;dialogHeight:def"],
+      ["size-decimal", "dialogWidth:500.8px;dialogHeight:300.2px"],
+      ["size-zero", "dialogWidth:0px;dialogHeight:0px"],
+      ["size-negative", "dialogWidth:-500px;dialogHeight:-300px"],
+      ["size-huge", "dialogWidth:5000px;dialogHeight:3000px"],
+      ["center-yes", "dialogWidth:500px;dialogHeight:300px;center:yes"],
+      ["center-no", "dialogWidth:500px;dialogHeight:300px;center:no"],
+      ["center-omitted", "dialogWidth:500px;dialogHeight:300px"],
+      ["resizable-yes", "dialogWidth:500px;dialogHeight:300px;resizable:yes"],
+      ["resizable-no", "dialogWidth:500px;dialogHeight:300px;resizable:no"],
+      ["resizable-omitted", "dialogWidth:500px;dialogHeight:300px"],
+      ["position-explicit", "dialogWidth:500px;dialogHeight:300px;dialogLeft:120px;dialogTop:80px"],
+      ["position-center-and-explicit", "dialogWidth:500px;dialogHeight:300px;center:yes;dialogLeft:120px;dialogTop:80px"],
+      ["position-negative", "dialogWidth:500px;dialogHeight:300px;dialogLeft:-200px;dialogTop:-100px"],
+      ["position-offscreen", "dialogWidth:500px;dialogHeight:300px;dialogLeft:5000px;dialogTop:3000px"],
+      ["status-yes", "dialogWidth:500px;dialogHeight:300px;status:yes"],
+      ["status-no", "dialogWidth:500px;dialogHeight:300px;status:no"],
+      ["scroll-yes", "dialogWidth:500px;dialogHeight:300px;scroll:yes"],
+      ["scroll-no", "dialogWidth:500px;dialogHeight:300px;scroll:no"],
+      ["duplicate-size", "dialogWidth:400px;dialogWidth:700px;dialogHeight:250px;dialogHeight:450px"],
+      ["equals-separator", "dialogWidth=500px;dialogHeight=300px;center=yes"],
+      ["unknown-mixed", "dialogWidth:500px;dialogHeight:300px;foo:bar;edge:legacy"]
+    ];
+    var rows = [];
+
+    function htmlEscape(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function markdownEscape(value) {
+      return String(value).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
+    }
+
+    function renderCases() {
+      var body = document.getElementById("cases");
+      var html = "";
+      var i;
+      for (i = 0; i < cases.length; i += 1) {
+        html += "<tr id=\"case-row-" + i + "\">" +
+          "<td>" + htmlEscape(cases[i][0]) + "</td>" +
+          "<td class=\"features\">" + htmlEscape(cases[i][1]) + "</td>" +
+          "<td id=\"case-status-" + i + "\">pending</td>" +
+          "<td><button type=\"button\" onclick=\"runCase(" + i + ")\">Run</button></td>" +
+          "</tr>";
+      }
+      body.innerHTML = html;
+    }
+
+    function runCase(index) {
+      var item = cases[index];
+      var args = {
+        caseId: item[0],
+        features: item[1],
+        parentScreenLeft: window.screenLeft,
+        parentScreenTop: window.screenTop
+      };
+      var result = "";
+
+      try {
+        result = window.showModalDialog("feature-dialog-ie.html", args, item[1]);
+      } catch (error) {
+        result = "error=" + String(error && error.message ? error.message : error);
+      }
+
+      if (result === undefined) {
+        result = "undefined";
+      }
+
+      document.getElementById("last").value =
+        "case=" + item[0] + "\r\nfeatures=" + item[1] + "\r\nresult=" + result;
+      document.getElementById("case-status-" + index).innerHTML = "done";
+      document.getElementById("case-row-" + index).className = "done";
+
+      rows.push("| " + markdownEscape(item[0]) +
+        " | `" + markdownEscape(item[1]) + "`" +
+        " | | | | | | " + markdownEscape(result) + " |");
+      document.getElementById("rows").value = rows.join("\r\n");
+    }
+
+    renderCases();
+  </script>
+</body>
+</html>

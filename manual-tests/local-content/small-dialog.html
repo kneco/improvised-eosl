@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Local small child</title>
+  <style>
+    body { margin: 0; padding: 12px; font: 14px/1.4 Arial, sans-serif; }
+    h1 { margin: 0 0 10px; font-size: 18px; }
+    button { padding: 6px 10px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <h1>Relative local child</h1>
+  <pre id="arguments"></pre>
+  <button type="button" onclick="returnValueAndClose()">Return value and close</button>
+  <script>
+    document.getElementById("arguments").textContent = JSON.stringify(window.dialogArguments);
+
+    function returnValueAndClose() {
+      window.returnValue = "local-child-ok";
+      window.close();
+    }
+  </script>
+</body>
+</html>

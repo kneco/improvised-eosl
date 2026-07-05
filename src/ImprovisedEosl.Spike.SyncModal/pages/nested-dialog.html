@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Nested showModalDialog probe</title>
+</head>
+<body>
+  <h1>Nested dialog probe</h1>
+  <pre id="result">Waiting to open nested dialog.</pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const result = document.querySelector("#result");
+
+    function returnAndClose(value) {
+      result.textContent = JSON.stringify(value, null, 2);
+      window.returnValue = value;
+      window.close();
+    }
+
+    function runNestedDialog() {
+      const nestedResult = window.showModalDialog(
+        "dialog.html?auto=1&run=nested-leaf",
+        { id: 202, name: "nested-leaf" },
+        "dialogWidth:500px;dialogHeight:300px"
+      );
+      returnAndClose({
+        accepted: true,
+        selectedId: window.dialogArguments.id,
+        nestedResult
+      });
+    }
+
+    function runDepthProbe() {
+      const level = Number(params.get("level") || "1");
+      const nestedResult = window.showModalDialog(
+        `nested-dialog.html?auto=1&mode=depth&level=${level + 1}`,
+        { level: level + 1 },
+        "dialogWidth:420px;dialogHeight:260px"
+      );
+      returnAndClose({ level, nestedResult });
+    }
+
+    function runOriginGuardProbe() {
+      const nestedResult = window.showModalDialog(
+        "dialog.html?auto=1&run=blocked-nested-origin",
+        { id: 303, name: "blocked-nested-origin" },
+        "dialogWidth:420px;dialogHeight:260px"
+      );
+      returnAndClose({ nestedWasUndefined: nestedResult === undefined });
+    }
+
+    if (params.get("auto") === "1") {
+      const mode = params.get("mode");
+      const action = mode === "depth"
+        ? runDepthProbe
+        : mode === "origin-guard"
+          ? runOriginGuardProbe
+          : runNestedDialog;
+      setTimeout(action, 250);
+    }
+  </script>
+</body>
+</html>

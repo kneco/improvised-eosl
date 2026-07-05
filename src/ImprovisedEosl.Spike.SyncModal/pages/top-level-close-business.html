@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Promoted business window</title></head>
+<body>
+  <h1>Business window</h1>
+  <p id="ticks">0</p>
+  <button id="openModal" type="button">Open modal</button>
+  <pre id="modalResult"></pre>
+  <script>
+    let ticks = 0;
+    setInterval(() => {
+      ticks += 1;
+      document.getElementById("ticks").textContent = String(ticks);
+    }, 50);
+    window.getTopLevelCloseTicks = () => ticks;
+    window.runTopLevelCloseModal = (selectedId) => {
+      try {
+        const value = window.showModalDialog(
+          `dialog.html?auto=1&run=top-level-close-${selectedId}`,
+          { id: selectedId, source: "retained-parent" },
+          "dialogWidth:500px;dialogHeight:320px;center:yes"
+        );
+        return {
+          invoked: true,
+          functionType: typeof window.showModalDialog,
+          value
+        };
+      } catch (error) {
+        return {
+          invoked: false,
+          functionType: typeof window.showModalDialog,
+          error: String(error && error.stack ? error.stack : error),
+          href: location.href
+        };
+      }
+    };
+    document.getElementById("openModal").addEventListener("click", () => {
+      const result = window.runTopLevelCloseModal(617);
+      document.getElementById("modalResult").textContent = JSON.stringify(result);
+    });
+  </script>
+</body>
+</html>

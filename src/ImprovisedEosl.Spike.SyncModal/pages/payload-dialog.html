@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Payload boundary probe</title>
+</head>
+<body>
+  <p>Payload boundary probe</p>
+  <script>
+    setTimeout(() => {
+      const mode = new URLSearchParams(location.search).get("mode");
+      if (mode === "argument-length") {
+        const value = window.dialogArguments;
+        window.returnValue = {
+          kind: typeof value,
+          receivedLength: typeof value === "string" ? value.length : -1,
+          suffix: typeof value === "string" ? value.slice(-20) : ""
+        };
+        window.close();
+        return;
+      }
+
+      const cyclic = { kind: "cyclic-return" };
+      cyclic.self = cyclic;
+      window.returnValue = cyclic;
+      window.close();
+    }, 250);
+  </script>
+</body>
+</html>

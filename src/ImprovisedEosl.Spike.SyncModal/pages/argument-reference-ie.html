@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>showModalDialog IE argument reference</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; line-height: 1.35; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #c8c8c8; padding: 6px 8px; text-align: left; }
+    th { background: #eeeeee; }
+    button { padding: 4px 8px; }
+    textarea { box-sizing: border-box; width: 100%; height: 150px; font-family: Consolas, monospace; }
+    .done { background: #e8f5e9; }
+  </style>
+</head>
+<body>
+  <h1>showModalDialog IE argument reference</h1>
+  <p>
+    This IE-mode-safe page measures direct string and nested string argument boundaries.
+    Each payload ends with a length-specific marker so truncation is visible.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Case</th>
+        <th>Argument kind</th>
+        <th>Requested length</th>
+        <th>Status</th>
+        <th>Run</th>
+      </tr>
+    </thead>
+    <tbody id="cases"></tbody>
+  </table>
+
+  <h2>Last result</h2>
+  <textarea id="last" readonly>No case has run yet.</textarea>
+
+  <h2>Checklist rows</h2>
+  <textarea id="rows" readonly></textarea>
+
+  <script>
+    var cases = [
+      ["string-4000", "string", 4000],
+      ["string-4096", "string", 4096],
+      ["string-4097", "string", 4097],
+      ["string-5000", "string", 5000],
+      ["object-string-5000", "object", 5000],
+      ["array-string-5000", "array", 5000]
+    ];
+    var rows = [];
+
+    function repeatText(text, count) {
+      var result = "";
+      while (result.length < count) {
+        result += text;
+      }
+      return result.substring(0, count);
+    }
+
+    function makeString(length) {
+      var marker = "|END:" + length + "|";
+      return repeatText("x", length - marker.length) + marker;
+    }
+
+    function makeArgument(item) {
+      var value = makeString(item[2]);
+      if (item[1] === "object") {
+        return { caseId: item[0], payload: value };
+      }
+      if (item[1] === "array") {
+        return [value];
+      }
+      return value;
+    }
+
+    function htmlEscape(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function markdownEscape(value) {
+      return String(value).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
+    }
+
+    function renderCases() {
+      var body = document.getElementById("cases");
+      var html = "";
+      var i;
+      for (i = 0; i < cases.length; i += 1) {
+        html += "<tr id=\"case-row-" + i + "\">" +
+          "<td>" + htmlEscape(cases[i][0]) + "</td>" +
+          "<td>" + htmlEscape(cases[i][1]) + "</td>" +
+          "<td>" + cases[i][2] + "</td>" +
+          "<td id=\"case-status-" + i + "\">pending</td>" +
+          "<td><button type=\"button\" onclick=\"runCase(" + i + ")\">Run</button></td>" +
+          "</tr>";
+      }
+      body.innerHTML = html;
+    }
+
+    function runCase(index) {
+      var item = cases[index];
+      var result;
+      try {
+        result = window.showModalDialog(
+          "argument-dialog-ie.html",
+          makeArgument(item),
+          "dialogWidth:620px;dialogHeight:320px;center:yes"
+        );
+      } catch (error) {
+        result = "error=" + String(error && error.message ? error.message : error);
+      }
+
+      if (result === undefined) {
+        result = "undefined";
+      }
+
+      document.getElementById("last").value =
+        "case=" + item[0] + "\r\n" +
+        "kind=" + item[1] + "\r\n" +
+        "requestedLength=" + item[2] + "\r\n" +
+        "result=" + result;
+      document.getElementById("case-status-" + index).innerHTML = "done";
+      document.getElementById("case-row-" + index).className = "done";
+
+      rows.push("| " + markdownEscape(item[0]) +
+        " | " + markdownEscape(item[1]) +
+        " | " + item[2] +
+        " | " + markdownEscape(result) + " |");
+      document.getElementById("rows").value = rows.join("\r\n");
+    }
+
+    renderCases();
+  </script>
+</body>
+</html>

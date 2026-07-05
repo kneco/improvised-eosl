@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Improvised EOSL child spike</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    button { margin-right: 8px; padding: 6px 10px; }
+    input { padding: 6px; width: 260px; }
+    pre { background: #f3f3f3; padding: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Child WebView2</h1>
+  <p>If you can type here and press buttons while the parent is blocked, the separate STA is alive.</p>
+  <p>Tick: <strong id="tick"></strong></p>
+  <p><input id="text" value="child remained interactive"></p>
+  <button id="accept">Return value and close</button>
+  <button id="cancel">Cancel</button>
+  <pre id="args"></pre>
+  <pre id="session-state"></pre>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const tick = document.querySelector("#tick");
+    const args = document.querySelector("#args");
+    const sessionState = document.querySelector("#session-state");
+    const text = document.querySelector("#text");
+    let ticks = 0;
+    const post = (message) => chrome.webview.postMessage(message);
+
+    function readSessionValues() {
+      return {
+        cookie: document.cookie,
+        localStorage: localStorage.getItem("ieCompatLocalStorage"),
+        sessionStorage: sessionStorage.getItem("ieCompatSessionStorage")
+      };
+    }
+
+    function setChildSessionValues(label) {
+      document.cookie = `ieCompatCookie=child-${label}; path=/; SameSite=Lax`;
+      localStorage.setItem("ieCompatLocalStorage", `child-${label}`);
+      sessionStorage.setItem("ieCompatSessionStorage", `child-${label}`);
+    }
+
+    function renderSessionState(prefix) {
+      sessionState.textContent = `${prefix}\n${JSON.stringify(readSessionValues(), null, 2)}`;
+    }
+
+    setInterval(() => {
+      ticks += 1;
+      tick.textContent = new Date().toISOString();
+    }, 250);
+
+    args.textContent = JSON.stringify(window.dialogArguments, null, 2);
+    post({ kind: "manual-event", event: "child-script-loaded" });
+    if (params.get("session") === "1") {
+      renderSessionState("Child session values before change");
+      post({ kind: "session-before", value: readSessionValues() });
+    }
+
+    window.addEventListener("focus", () => {
+      post({ kind: "manual-event", event: "child-window-focus" });
+    });
+
+    text.addEventListener("focus", () => {
+      post({ kind: "manual-event", event: "child-input-focus" });
+    });
+
+    text.addEventListener("input", () => {
+      post({ kind: "manual-event", event: "child-input", value: text.value, ticks });
+    });
+
+    document.querySelector("#accept").addEventListener("click", () => {
+      if (params.get("session") === "1") {
+        setChildSessionValues(`accepted-${Date.now()}`);
+        renderSessionState("Child session values after change");
+      }
+      const sessionValues = readSessionValues();
+      post({ kind: "manual-event", event: "child-accept-click", value: text.value, ticks });
+      window.returnValue = {
+        accepted: true,
+        selectedId: window.dialogArguments.id,
+        text: text.value,
+        ticks,
+        session: params.get("session") === "1" ? sessionValues : undefined
+      };
+      window.close();
+    });
+
+    document.querySelector("#cancel").addEventListener("click", () => {
+      post({ kind: "manual-event", event: "child-cancel-click", ticks });
+      window.close();
+    });
+
+    if (params.get("auto") === "1") {
+      setTimeout(() => {
+        if (params.get("session") === "1") {
+          setChildSessionValues(`auto-${params.get("run")}`);
+        }
+        window.returnValue = {
+          accepted: true,
+          selectedId: window.dialogArguments.id,
+          text: text.value,
+          run: params.get("run"),
+          ticks,
+          session: params.get("session") === "1" ? readSessionValues() : undefined
+        };
+        window.close();
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
