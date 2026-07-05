@@ -10,7 +10,7 @@
 
 ### ZIP版（いちばん簡単）
 
-[GitHub Releases](https://github.com/kneco/improvised-eosl/releases)からWindows ZIPを取得し、ZIP全体を展開して `ImprovisedEosl.Spike.SyncModal.exe` をダブルクリックします。.NET SDKは不要です。ZIP内から直接EXEを開かないでください。隣接する `config` と `pages` フォルダーが必要です。
+[GitHub Releases](https://github.com/kneco/improvised-eosl/releases)からWindows ZIPを取得し、新しいフォルダーへZIP全体を展開します。展開先のルートにある `ImprovisedEosl.Spike.SyncModal.exe` をダブルクリックします。.NET SDKは不要です。ZIP内から直接EXEを開かないでください。隣接するDLL、`config`、`pages`なども必要です。
 
 ZIP版にもMicrosoft Edge WebView2 Runtimeは必要です。通常のMicrosoft Edgeが導入されたWindows環境では、すでに利用できることがあります。
 
@@ -147,7 +147,7 @@ powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.7
 dist/ImprovisedEosl-0.1.7-mvp-win-x64.zip
 ```
 
-これは単一EXEではなく、WebView2のネイティブローダー、HTML、設定ファイルを含むフォルダー形式です。ZIPを展開した後はEXEを直接起動できます。
+これは単一EXEではなく、WebView2のネイティブローダー、HTML、設定ファイルを含むフォルダー形式です。ZIP内に余分な製品名フォルダーはなく、新しいフォルダーへ展開するとルートにEXEが現れます。隣接ファイルを移動せず、そのEXEを起動してください。
 
 ## MVPの範囲
 

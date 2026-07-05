@@ -31,6 +31,15 @@ jobs:
           $version = "${{ github.ref_name }}" -replace '^v', ''
           ./scripts/publish-dist.ps1 -Version $version
 
+      - name: Verify Windows distribution layout
+        shell: pwsh
+        run: |
+          $assets = @(Get-ChildItem ./dist/*.zip)
+          if ($assets.Count -ne 1) {
+            throw "Expected exactly one release ZIP, found $($assets.Count)."
+          }
+          ./scripts/test-dist-layout.ps1 -ZipPath $assets[0].FullName
+
       - name: Create GitHub release
         shell: pwsh
         env:

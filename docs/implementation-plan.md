@@ -332,6 +332,45 @@ Status:
 - A tag-triggered GitHub Actions workflow runs policy tests, builds the self-contained package, and attaches it to a GitHub Release.
 - Code signing, an installer, automatic updates, and enterprise deployment remain out of scope.
 
+### Post-MVP ZIP root simplification
+
+Objective:
+
+- Make the launch executable visible immediately after extraction by removing the redundant
+  versioned wrapper directory inside the ZIP.
+
+Decisions and constraints:
+
+- Keep the archive filename versioned, but place the existing publish output directly at the ZIP
+  root.
+- Do not move managed assemblies, the WebView2 native loader, `config`, or `pages` relative to the
+  executable. Their tested adjacent layout remains authoritative.
+- Keep `README.txt`, `LICENSE.txt`, and `THIRD-PARTY-NOTICES.txt` at the ZIP root.
+- Do not introduce a launcher, installer, single-file publishing, or any compatibility/security
+  behavior change.
+- Treat extraction into a new directory as the supported workflow because a flat archive can mix
+  files into an existing destination.
+
+Validation gate:
+
+- Add an automated archive-layout check that rejects a versioned wrapper directory, requires the
+  executable and required documentation at the ZIP root, and verifies the native loader,
+  `config`, and `pages` are retained.
+- Generate and inspect a self-contained `win-x64` ZIP locally.
+- Run policy tests and a Release build.
+- Run the extracted executable with `--auto` from a normal user PowerShell if the agent-launched
+  WebView2 process is constrained. Do not weaken Chromium or WebView2 security flags.
+
+Status (2026-07-06):
+
+- Implemented direct-at-root ZIP entries while retaining the unchanged folder-based publish
+  output on disk.
+- The automated layout check passed for all 499 archive entries and confirmed the required root
+  documents, executable, native loader, configuration, and HTML pages.
+- All 60 policy checks passed, the self-contained Release publish completed, and the extracted
+  executable completed `--auto` with exit code 0 from the agent environment. No normal-user
+  fallback was required for this run.
+
 ## Phase 12: safe local HTML loading
 
 - keep direct `file:` compatibility origins rejected

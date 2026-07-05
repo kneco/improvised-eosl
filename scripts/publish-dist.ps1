@@ -9,6 +9,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot "src\ImprovisedEosl.Spike.SyncModal\ImprovisedEosl.Spike.SyncModal.csproj"
 $distRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "dist"))
@@ -55,7 +57,16 @@ Copy-Item `
     -LiteralPath (Join-Path $repoRoot "THIRD-PARTY-NOTICES.md") `
     -Destination (Join-Path $packageDir "THIRD-PARTY-NOTICES.txt")
 
-Compress-Archive -LiteralPath $packageDir -DestinationPath $zipPath -CompressionLevel Optimal
+[System.IO.Compression.ZipFile]::CreateFromDirectory(
+    $packageDir,
+    $zipPath,
+    [System.IO.Compression.CompressionLevel]::Optimal,
+    $false)
+
+& (Join-Path $PSScriptRoot "test-dist-layout.ps1") -ZipPath $zipPath
+if ($LASTEXITCODE -ne 0) {
+    throw "Distribution layout validation failed with exit code $LASTEXITCODE."
+}
 
 $zip = Get-Item -LiteralPath $zipPath
 Write-Host "Created $($zip.FullName) ($([math]::Round($zip.Length / 1MB, 1)) MiB)"
