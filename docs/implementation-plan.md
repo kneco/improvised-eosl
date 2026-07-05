@@ -370,6 +370,9 @@ Status (2026-07-06):
 - All 60 policy checks passed, the self-contained Release publish completed, and the extracted
   executable completed `--auto` with exit code 0 from the agent environment. No normal-user
   fallback was required for this run.
+- Pull requests targeting `main` build the self-contained package, run the archive-layout check,
+  and retain the validated ZIP briefly as a workflow artifact. Tag pushes continue to use the
+  separate release workflow and publish only after the same layout check passes.
 
 ## Phase 12: safe local HTML loading
 

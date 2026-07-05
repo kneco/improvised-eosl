@@ -138,13 +138,13 @@ dotnet run --no-build --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEos
 自己完結型の64-bit Windows版を生成します。受け取る側に.NET SDKは不要です。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.7-mvp
+powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.8-mvp
 ```
 
 生成物:
 
 ```text
-dist/ImprovisedEosl-0.1.7-mvp-win-x64.zip
+dist/ImprovisedEosl-0.1.8-mvp-win-x64.zip
 ```
 
 これは単一EXEではなく、WebView2のネイティブローダー、HTML、設定ファイルを含むフォルダー形式です。ZIP内に余分な製品名フォルダーはなく、新しいフォルダーへ展開するとルートにEXEが現れます。隣接ファイルを移動せず、そのEXEを起動してください。
