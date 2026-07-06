@@ -60,6 +60,20 @@ public static class UiText
     public const string LocalOpenSingleFile = nameof(LocalOpenSingleFile);
     public const string LocalOpenHtmlOnly = nameof(LocalOpenHtmlOnly);
     public const string LocalOpenFailed = nameof(LocalOpenFailed);
+    public const string CompatibilityStatusUndecided = nameof(CompatibilityStatusUndecided);
+    public const string CompatibilityStatusDetected = nameof(CompatibilityStatusDetected);
+    public const string CompatibilityStatusEnabled = nameof(CompatibilityStatusEnabled);
+    public const string CompatibilityStatusDenied = nameof(CompatibilityStatusDenied);
+    public const string CompatibilityStatusBlocked = nameof(CompatibilityStatusBlocked);
+    public const string CompatibilityStatusDetail = nameof(CompatibilityStatusDetail);
+    public const string CompatibilityStatusNoApis = nameof(CompatibilityStatusNoApis);
+    public const string CompatibilityStatusChecking = nameof(CompatibilityStatusChecking);
+    public const string CompatibilityStatusError = nameof(CompatibilityStatusError);
+    public const string CompatibilityStatusInitializingDetail = nameof(CompatibilityStatusInitializingDetail);
+    public const string CompatibilityStatusRecoveringDetail = nameof(CompatibilityStatusRecoveringDetail);
+    public const string CompatibilityStatusRecoveryFailedDetail = nameof(CompatibilityStatusRecoveryFailedDetail);
+    public const string CompatibilityStatusDetailTitle = nameof(CompatibilityStatusDetailTitle);
+    public const string CloseButton = nameof(CloseButton);
 
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>
     {
@@ -118,7 +132,21 @@ public static class UiText
         [LocalOpenErrorTitle] = "Could not open local HTML",
         [LocalOpenSingleFile] = "Drop one local HTML file at a time.",
         [LocalOpenHtmlOnly] = "Only local .html and .htm files can be opened.",
-        [LocalOpenFailed] = "The local HTML file could not be opened. Check that the file still exists and is readable."
+        [LocalOpenFailed] = "The local HTML file could not be opened. Check that the file still exists and is readable.",
+        [CompatibilityStatusUndecided] = "Compatibility: undecided",
+        [CompatibilityStatusDetected] = "Compatibility: detected",
+        [CompatibilityStatusEnabled] = "Compatibility: enabled",
+        [CompatibilityStatusDenied] = "Compatibility: denied",
+        [CompatibilityStatusBlocked] = "Compatibility: blocked",
+        [CompatibilityStatusDetail] = "{0}. Origin: {1}. Enabled APIs: {2}. Denied APIs: {3}. Detected APIs: {4}.",
+        [CompatibilityStatusNoApis] = "none",
+        [CompatibilityStatusChecking] = "Compatibility: checking",
+        [CompatibilityStatusError] = "Compatibility: error",
+        [CompatibilityStatusInitializingDetail] = "Compatibility status is not available while the browser initializes.",
+        [CompatibilityStatusRecoveringDetail] = "Compatibility status is not available while the browser recovers.",
+        [CompatibilityStatusRecoveryFailedDetail] = "Browser recovery failed. This is an operational error, not a compatibility permission decision.",
+        [CompatibilityStatusDetailTitle] = "Compatibility status",
+        [CloseButton] = "Close"
     };
 
     private static readonly IReadOnlyDictionary<string, string> Japanese = new Dictionary<string, string>
@@ -178,7 +206,21 @@ public static class UiText
         [LocalOpenErrorTitle] = "ローカルHTMLを開けませんでした",
         [LocalOpenSingleFile] = "ローカルHTMLファイルを1つだけドロップしてください。",
         [LocalOpenHtmlOnly] = "開けるローカルファイルは .html または .htm だけです。",
-        [LocalOpenFailed] = "ローカルHTMLを開けませんでした。ファイルが存在し、読み取り可能か確認してください。"
+        [LocalOpenFailed] = "ローカルHTMLを開けませんでした。ファイルが存在し、読み取り可能か確認してください。",
+        [CompatibilityStatusUndecided] = "互換: 未決定",
+        [CompatibilityStatusDetected] = "互換: 検出済み",
+        [CompatibilityStatusEnabled] = "互換: 有効",
+        [CompatibilityStatusDenied] = "互換: 拒否",
+        [CompatibilityStatusBlocked] = "互換: ブロック",
+        [CompatibilityStatusDetail] = "{0}。Origin: {1}。有効なAPI: {2}。拒否したAPI: {3}。検出したAPI: {4}。",
+        [CompatibilityStatusNoApis] = "なし",
+        [CompatibilityStatusChecking] = "互換: 確認中",
+        [CompatibilityStatusError] = "互換: エラー",
+        [CompatibilityStatusInitializingDetail] = "ブラウザーの初期化中は互換状態を確認できません。",
+        [CompatibilityStatusRecoveringDetail] = "ブラウザーの復旧中は互換状態を確認できません。",
+        [CompatibilityStatusRecoveryFailedDetail] = "ブラウザーの復旧に失敗しました。これは互換機能の許可・拒否を表す状態ではありません。",
+        [CompatibilityStatusDetailTitle] = "互換状態",
+        [CloseButton] = "閉じる"
     };
 
     public static string Get(string key)

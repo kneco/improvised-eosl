@@ -165,46 +165,90 @@ public sealed class CompatibilityOriginPolicy
     public CompatibilityStatus GetStatus(Uri uri)
     {
         var origin = GetOrigin(uri);
+        var enabledApis = CompatibilityApi.Known
+            .Where(apiName => IsAllowed(origin, apiName))
+            .ToArray();
+        var deniedApis = CompatibilityApi.Known
+            .Where(apiName => IsDenied(origin, apiName))
+            .ToArray();
+
         if (_pendingDetection is not null &&
             string.Equals(_pendingDetection.Origin, origin, StringComparison.OrdinalIgnoreCase))
         {
             return new CompatibilityStatus(
                 origin,
-                "Compatibility: legacy API detected; permission needed");
+                "Compatibility: legacy API detected; permission needed",
+                CompatibilityStatusState.DetectionPending,
+                enabledApis,
+                deniedApis,
+                [_pendingDetection.ApiName]);
         }
 
-        var showModalDialog = IsAllowed(origin, CompatibilityApi.ShowModalDialog);
-        var windowOpenFeatures = IsAllowed(origin, CompatibilityApi.WindowOpenFeatures);
-        var topLevelCloseHandoff = IsAllowed(origin, CompatibilityApi.TopLevelCloseHandoff);
-        var enabledCount = (showModalDialog ? 1 : 0) +
-            (windowOpenFeatures ? 1 : 0) +
-            (topLevelCloseHandoff ? 1 : 0);
-        if (enabledCount >= 2)
+        if (enabledApis.Length >= 2)
         {
-            return new CompatibilityStatus(origin, "Compatibility: known legacy features enabled for this origin");
-        }
-
-        if (showModalDialog)
-        {
-            return new CompatibilityStatus(
+            return CreateStatus(
                 origin,
-                "Compatibility: showModalDialog enabled for this origin");
+                "Compatibility: known legacy features enabled for this origin",
+                CompatibilityStatusState.Enabled,
+                enabledApis,
+                deniedApis);
         }
 
-        if (windowOpenFeatures)
+        if (enabledApis.Contains(CompatibilityApi.ShowModalDialog, StringComparer.Ordinal))
         {
-            return new CompatibilityStatus(origin, "Compatibility: window.open features enabled for this origin");
+            return CreateStatus(
+                origin,
+                "Compatibility: showModalDialog enabled for this origin",
+                CompatibilityStatusState.Enabled,
+                enabledApis,
+                deniedApis);
         }
 
-        if (topLevelCloseHandoff)
+        if (enabledApis.Contains(CompatibilityApi.WindowOpenFeatures, StringComparer.Ordinal))
         {
-            return new CompatibilityStatus(origin, "Compatibility: window.close handoff enabled for this origin");
+            return CreateStatus(
+                origin,
+                "Compatibility: window.open features enabled for this origin",
+                CompatibilityStatusState.Enabled,
+                enabledApis,
+                deniedApis);
         }
 
-        return origin == "opaque"
-            ? new CompatibilityStatus(origin, "Compatibility: blocked for this origin")
-            : new CompatibilityStatus(origin, "Compatibility: off");
+        if (enabledApis.Contains(CompatibilityApi.TopLevelCloseHandoff, StringComparer.Ordinal))
+        {
+            return CreateStatus(
+                origin,
+                "Compatibility: window.close handoff enabled for this origin",
+                CompatibilityStatusState.Enabled,
+                enabledApis,
+                deniedApis);
+        }
+
+        if (origin == "opaque")
+        {
+            return CreateStatus(
+                origin,
+                "Compatibility: blocked for this origin",
+                CompatibilityStatusState.Blocked,
+                enabledApis,
+                deniedApis);
+        }
+
+        return CreateStatus(
+            origin,
+            "Compatibility: off",
+            deniedApis.Length > 0 ? CompatibilityStatusState.Denied : CompatibilityStatusState.Undecided,
+            enabledApis,
+            deniedApis);
     }
+
+    private static CompatibilityStatus CreateStatus(
+        string origin,
+        string label,
+        CompatibilityStatusState state,
+        IReadOnlyList<string> enabledApis,
+        IReadOnlyList<string> deniedApis) =>
+        new(origin, label, state, enabledApis, deniedApis, Array.Empty<string>());
 
     public static string GetOrigin(Uri uri)
     {

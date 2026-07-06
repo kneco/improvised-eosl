@@ -19,13 +19,13 @@
         <Grid Grid.Row="0" Margin="8">
             <Grid.RowDefinitions>
                 <RowDefinition x:Name="BrowserCommandRow" Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" MinWidth="120" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -78,6 +78,27 @@
                      Margin="0,0,4,0"
                      Padding="6,4"
                      KeyDown="AddressBox_KeyDown" />
+            <Button x:Name="CompatibilityStatusButton"
+                    Grid.Row="0"
+                    Grid.Column="5"
+                    Margin="0,0,4,0"
+                    Padding="8,5"
+                    MaxWidth="170"
+                    Style="{StaticResource LabeledCommandButtonStyle}"
+                    Click="CompatibilityStatus_Click">
+                <StackPanel Orientation="Horizontal">
+                    <Path x:Name="CompatibilityStatusIconPath"
+                          Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Data="{StaticResource CompatibilityOperationalIconGeometry}" />
+                    <TextBlock x:Name="CompatibilityStatusText"
+                               VerticalAlignment="Center"
+                               Text="互換: 確認中"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Button>
             <Button Grid.Row="0"
                     Grid.Column="4"
                     Margin="0,0,4,0"
@@ -93,7 +114,7 @@
             </Button>
             <Button x:Name="ApplicationSettingsButton"
                     Grid.Row="0"
-                    Grid.Column="5"
+                    Grid.Column="6"
                     Margin="0,0,4,0"
                     Style="{StaticResource LabeledCommandButtonStyle}"
                     Click="ApplicationSettings_Click">
@@ -107,7 +128,7 @@
             </Button>
             <Button x:Name="DiagnosticsButton"
                     Grid.Row="0"
-                    Grid.Column="6"
+                    Grid.Column="7"
                     Style="{StaticResource LabeledCommandButtonStyle}"
                     Click="Diagnostics_Click">
                 <StackPanel Orientation="Horizontal">
@@ -119,13 +140,6 @@
                 </StackPanel>
             </Button>
 
-            <TextBlock x:Name="CompatibilityStatusText"
-                       Grid.Row="1"
-                       Grid.Column="0"
-                       Grid.ColumnSpan="7"
-                       Margin="0,6,0,0"
-                       FontWeight="SemiBold"
-                       Text="Compatibility: initializing" />
         </Grid>
 
         <Grid x:Name="ParentWebViewHost" Grid.Row="1">

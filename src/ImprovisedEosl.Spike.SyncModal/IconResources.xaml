@@ -10,6 +10,13 @@
     <Geometry x:Key="NavigateIconGeometry">M3,12 H20 M14,6 L20,12 L14,18</Geometry>
     <Geometry x:Key="SettingsIconGeometry">M12,2 V5 M12,19 V22 M2,12 H5 M19,12 H22 M5,5 L7,7 M17,17 L19,19 M19,5 L17,7 M7,17 L5,19 M12,7 A5,5 0 1 1 11.99,7</Geometry>
     <Geometry x:Key="DiagnosticsIconGeometry">M4,4 H20 V20 H4 Z M8,9 H16 M8,13 H16 M8,17 H13</Geometry>
+    <Geometry x:Key="CompatibilityUndecidedIconGeometry">M12,3 A9,9 0 1 1 11.99,3 M9.5,9 A2.5,2.5 0 0 1 14.5,9 C14.5,11 12,11 12,14 M12,18 L12,18.1</Geometry>
+    <Geometry x:Key="CompatibilityDetectedIconGeometry">M12,3 L21,20 H3 Z M12,8 V14 M12,17 L12,17.1</Geometry>
+    <Geometry x:Key="CompatibilityEnabledIconGeometry">M12,3 L20,6 V12 C20,17 16.5,20 12,21 C7.5,20 4,17 4,12 V6 Z M8,12 L11,15 L16,9</Geometry>
+    <Geometry x:Key="CompatibilityDeniedIconGeometry">M12,3 A9,9 0 1 1 11.99,3 M6,18 L18,6</Geometry>
+    <Geometry x:Key="CompatibilityBlockedIconGeometry">M7,11 V8 A5,5 0 0 1 17,8 V11 M5,11 H19 V21 H5 Z</Geometry>
+    <Geometry x:Key="CompatibilityOperationalIconGeometry">M12,3 A9,9 0 1 1 11.99,3 M12,7 V12 L16,14</Geometry>
+    <Geometry x:Key="CompatibilityErrorIconGeometry">M12,3 L21,20 H3 Z M12,8 V14 M12,17 L12,17.1</Geometry>
 
     <Style x:Key="BrowserCommandButtonStyle" TargetType="Button">
         <Setter Property="MinWidth" Value="34" />

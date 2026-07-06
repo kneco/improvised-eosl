@@ -946,3 +946,74 @@ Public release gate:
    changing the replacement repository to public.
 8. After changing visibility, verify the public tree and README links independently. Do not copy
    private releases, issues, tags, branches, or other history into the public repository.
+
+## Phase 19: compact compatibility status display
+
+Goal: recover browser content height while preserving a persistent textual compatibility state,
+the exact origin/API detail, and accessible operation.
+
+Design decision:
+
+- Use an icon plus a short localized state label adjacent to the address field.
+- Interpret the existing requirement that icons must not replace textual state as requiring a
+  persistent human-readable state label, not the current full diagnostic sentence on its own row.
+- Keep exact normalized origin and enabled API names in complete accessible text and an on-demand
+  detail surface that does not depend on pointer hover.
+- Do not place the indicator inside the editable address field in this phase; custom focus,
+  hit-testing, and screen-reader behavior would add risk without changing compatibility behavior.
+- Keep the indicator as a view of native policy. It must not grant, deny, revoke, or otherwise
+  become a security boundary.
+- Add structured status/API data to the Core presentation result before changing layout. The WPF
+  shell must not parse English diagnostic labels to determine state or iconography.
+- Preserve explicit per-API denials in that presentation result. The current English status label
+  collapses an ordinary denied origin and an untouched origin to `off`, which does not meet Issue
+  #2's requirement to keep denied, undecided, and detected states distinct.
+- Preserve existing consent and settings flows and keep visual work separate from compatibility
+  execution.
+
+Comparison and detailed acceptance criteria are recorded in
+`docs/compatibility-status-display-comparison.md`.
+
+Implementation gate:
+
+1. Add automated coverage for structured untouched, detected/pending, enabled-per-API,
+   enabled-multiple, denied-per-API, mixed allow/deny, and opaque states and for Allow/Deny/Revoke
+   transitions.
+2. Add WPF mapping checks for localized short text, state-specific icon, and complete accessible
+   text without diagnostic-label parsing.
+3. Replace the full-width row only after manual navigation, redirect, permission, revocation,
+   keyboard, screen-reader, high-contrast, theme, narrow-window, and 100%/150%/200% DPI checks pass.
+4. Treat initialization and browser recovery as operational states distinct from compatibility
+   allow/deny policy.
+
+Status:
+
+- The option comparison is complete and option C, icon plus persistent short text next to the
+  address field, is selected for implementation.
+- Core now reports structured `Undecided`, `DetectionPending`, `Enabled`, `Denied`, and `Blocked`
+  presentation states with separate enabled, denied, and detected API lists. Existing English
+  diagnostic labels and `DisplayText` remain unchanged.
+- The structured-state checks cover untouched, pending detection, explicit denial, mixed
+  allow/deny, multiple enabled APIs, decision clearing, and opaque-origin blocking.
+- The shell's pure presentation mapper now selects a short Japanese label and semantic icon kind
+  for every structured state and builds complete accessible/detail text containing the normalized
+  origin plus enabled, denied, and detected API lists. It does not parse the diagnostic label.
+- The Windows-targeted test executable directly references the spike to validate this mapper
+  without creating WPF controls.
+- The former full-width status row is replaced by a focusable compact status button next to the
+  address field. The button retains short text, uses state-specific geometry, exposes complete
+  Automation and tooltip text, and opens the same detail through keyboard or pointer activation.
+- The navigation controls keep the address field and Go adjacent; the compatibility status follows
+  Go so origin-related trust information remains nearby without splitting the navigation action.
+  The corrected order passed normal-user visual confirmation on 2026-07-07.
+- The first UI inspection rejected a native MessageBox because it clipped the complete detail.
+  The replacement owned WPF detail window wraps the origin/API text, bounds its height with a
+  vertical scrollbar, and provides default and cancel Close behavior.
+- Initialization, recovery, and recovery failure use separate operational presentations and do
+  not claim an Allow or Deny policy result.
+- All 63 automated checks pass, the complete solution builds with zero warnings and errors, the
+  existing synchronous WebView2 `--auto` smoke exits with code `0`, and `git diff --check` passes.
+- Normal-user checks pass for basic layout, keyboard/detail operation, allow, deny, revoke, and
+  origin-change transitions. Screen-reader, theme, high-contrast, multiple-resolution, and
+  100%/150%/200% DPI checks are deferred under
+  `docs/compatibility-status-display-manual-test.md`.
