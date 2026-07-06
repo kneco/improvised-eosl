@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private readonly bool _topLevelCloseAutoRun;
     private readonly bool _topLevelCloseManualRun;
     private readonly bool _topLevelCloseNormalPopupAutoRun;
+    private readonly bool _revokedPermissionAutoRun;
     private readonly bool _showDiagnosticsAtStartup;
     private readonly CompatibilityOriginPolicy _compatibilityPolicy;
     private readonly UserApprovedOriginStore _approvalStore;
@@ -67,6 +68,7 @@ public partial class MainWindow : Window
     private bool _windowOpenObservationTriggered;
     private bool _browserSettingsAutoCompleted;
     private bool _topLevelCloseRequestHandling;
+    private bool _revokedPermissionAutoTriggered;
     private PendingTopLevelHandoff? _pendingTopLevelHandoff;
     private string? _pendingTopLevelHandoffToken;
     private int _windowOpenObservationNextCase;
@@ -114,6 +116,11 @@ public partial class MainWindow : Window
         _topLevelCloseAutoRun = args.Any(arg => arg.Equals("--top-level-close-auto", StringComparison.OrdinalIgnoreCase));
         _topLevelCloseManualRun = args.Any(arg => arg.Equals("--top-level-close-manual", StringComparison.OrdinalIgnoreCase));
         _topLevelCloseNormalPopupAutoRun = args.Any(arg => arg.Equals("--top-level-close-popup-auto", StringComparison.OrdinalIgnoreCase));
+        _revokedPermissionAutoRun = args.Any(arg => arg.Equals("--revoked-permission-auto", StringComparison.OrdinalIgnoreCase));
+        if (_revokedPermissionAutoRun)
+        {
+            Environment.ExitCode = 1;
+        }
         if (_topLevelCloseNormalPopupAutoRun)
         {
             Environment.ExitCode = 1;
@@ -477,6 +484,10 @@ public partial class MainWindow : Window
             else if (_parentUnresponsiveAutoRun)
             {
                 parentUri.Query = "parentUnresponsiveAuto=1";
+            }
+            else if (_revokedPermissionAutoRun)
+            {
+                parentUri.Query = "revokedPermissionAuto=1";
             }
 
             var automaticStartupUri = _topLevelCloseNormalPopupAutoRun
@@ -1181,6 +1192,19 @@ public partial class MainWindow : Window
                     DialogNavigationPolicy.FormatForLog(ParentWebView.Source?.ToString() ?? "(none)"));
             }
         }
+        if (e.IsSuccess && _revokedPermissionAutoRun && !_revokedPermissionAutoTriggered)
+        {
+            _revokedPermissionAutoTriggered = true;
+            var origin = CompatibilityOriginPolicy.GetOrigin(ParentWebView.Source!);
+            if (!_compatibilityPolicy.Revoke(origin, CompatibilityApi.ShowModalDialog))
+            {
+                FailAutoRun("revoked-permission fixture could not revoke its runtime grant");
+                return;
+            }
+            AppendLog($"revoked runtime permission on loaded document: origin={origin}");
+            await ParentWebView.CoreWebView2.ExecuteScriptAsync(
+                "window.showModalDialog('dialog.html', null, '')");
+        }
     }
 
     private async void ScheduleParentRendererHangForAutomaticValidation()
@@ -1735,7 +1759,8 @@ public partial class MainWindow : Window
             _startupProfileAutoRun || _nativeCloseAutoRun || _nativeXUiRun || _nestedAutoRun ||
             _processFailureAutoRun || _browserProcessFailureAutoRun || _unresponsiveAutoRun ||
             _parentUnresponsiveAutoRun || _windowOpenObservation || _windowOpenObservationAuto ||
-            _browserSettingsAutoRun || _topLevelCloseAutoRun || _topLevelCloseNormalPopupAutoRun;
+            _browserSettingsAutoRun || _topLevelCloseAutoRun || _topLevelCloseNormalPopupAutoRun ||
+            _revokedPermissionAutoRun;
     }
 
     private string? GetStartupProfileErrorMessage()
@@ -1761,7 +1786,7 @@ public partial class MainWindow : Window
         return _autoRun || _sessionAutoRun || _failureAutoRun || _featureAutoRun ||
             _payloadAutoRun || _originGuardAutoRun || _navigationAutoRun || _nativeCloseAutoRun ||
             _nativeXUiRun || _nestedAutoRun || _processFailureAutoRun || _browserProcessFailureAutoRun ||
-            _unresponsiveAutoRun || _parentUnresponsiveAutoRun;
+            _unresponsiveAutoRun || _parentUnresponsiveAutoRun || _revokedPermissionAutoRun;
     }
 
     private bool IsCurrentOriginConfigured()
@@ -1788,6 +1813,23 @@ public partial class MainWindow : Window
         }
 
         origin = normalizedOrigin;
+        if (_revokedPermissionAutoRun)
+        {
+            if (_revokedPermissionAutoTriggered &&
+                apiName == CompatibilityApi.ShowModalDialog &&
+                !_compatibilityPolicy.IsAllowed(origin, apiName))
+            {
+                Environment.ExitCode = 0;
+                FinishAutoRun(
+                    "loaded document returned to low-privilege discovery after runtime revocation");
+            }
+            else
+            {
+                FailAutoRun(
+                    $"unexpected revoked-permission detection: origin={origin}; api={apiName}");
+            }
+            return;
+        }
         if (_compatibilityPolicy.IsDenied(origin, apiName))
         {
             AppendLog($"legacy API remains denied without prompting: origin={origin}; api={apiName}");
