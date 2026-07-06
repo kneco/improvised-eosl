@@ -18,7 +18,10 @@ The current dependency direction is:
 
 - `ImprovisedEosl.Spike.SyncModal` -> `ImprovisedEosl.Core`
 - `ImprovisedEosl.Spike.SyncModal` -> `ImprovisedEosl.ModalDialog`
-- `ImprovisedEosl.Spike.Tests` -> both class libraries through project references
+- `ImprovisedEosl.Spike.Tests` -> both class libraries and
+  `ImprovisedEosl.Spike.SyncModal` through project references; the Windows-targeted test executable
+  directly validates the shell's pure compatibility-status presentation mapping without creating
+  WPF controls
 - `ImprovisedEosl.Core` and `ImprovisedEosl.ModalDialog` have no WPF or WebView2 dependency
 - the two class libraries are currently independent of each other
 

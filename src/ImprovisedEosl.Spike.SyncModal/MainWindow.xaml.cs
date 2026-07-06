@@ -75,6 +75,7 @@ public partial class MainWindow : Window
     private readonly List<(string Name, WindowOpenFeatureCapture Capture)> _windowOpenCaptures = [];
     private readonly HashSet<NewWindowObservationWindow> _modelessWindows = [];
     private WindowState _lastNonMinimizedWindowState = WindowState.Normal;
+    private string _compatibilityStatusDetail = string.Empty;
 
     private sealed record PendingTopLevelHandoff(
         Uri TargetUri,
@@ -88,6 +89,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SetCompatibilityStatusPresentation(
+            CompatibilityStatusPresentationPolicy.CreateOperational(CompatibilityOperationalStatus.Initializing));
         var args = Environment.GetCommandLineArgs();
         _autoRun = args.Any(arg => arg.Equals("--auto", StringComparison.OrdinalIgnoreCase));
         _sessionAutoRun = args.Any(arg => arg.Equals("--session-auto", StringComparison.OrdinalIgnoreCase));
@@ -609,7 +612,8 @@ public partial class MainWindow : Window
         AppendLog(
             $"parent WebView2 browser recovery started: trigger={trigger}; " +
             $"source={DialogNavigationPolicy.FormatForLog(recoveryUri?.ToString() ?? "(none)")}");
-        CompatibilityStatusText.Text = "Compatibility: recovering browser";
+        SetCompatibilityStatusPresentation(
+            CompatibilityStatusPresentationPolicy.CreateOperational(CompatibilityOperationalStatus.Recovering));
         BackButton.IsEnabled = false;
         ForwardButton.IsEnabled = false;
 
@@ -660,7 +664,9 @@ public partial class MainWindow : Window
             }
             else
             {
-                CompatibilityStatusText.Text = "Compatibility: browser recovery failed";
+                SetCompatibilityStatusPresentation(
+                    CompatibilityStatusPresentationPolicy.CreateOperational(
+                        CompatibilityOperationalStatus.RecoveryFailed));
             }
         }
         finally
@@ -1682,7 +1688,38 @@ public partial class MainWindow : Window
 
     private void UpdateCompatibilityStatus(Uri uri)
     {
-        CompatibilityStatusText.Text = _compatibilityPolicy.GetStatus(uri).DisplayText;
+        SetCompatibilityStatusPresentation(
+            CompatibilityStatusPresentationPolicy.Create(_compatibilityPolicy.GetStatus(uri)));
+    }
+
+    private void SetCompatibilityStatusPresentation(CompatibilityStatusPresentation presentation)
+    {
+        CompatibilityStatusText.Text = presentation.ShortLabel;
+        CompatibilityStatusIconPath.Data = FindResource(GetCompatibilityStatusGeometryKey(presentation.Icon)) as System.Windows.Media.Geometry;
+        CompatibilityStatusButton.ToolTip = presentation.DetailText;
+        AutomationProperties.SetName(CompatibilityStatusButton, presentation.AccessibleText);
+        _compatibilityStatusDetail = presentation.DetailText;
+    }
+
+    private static string GetCompatibilityStatusGeometryKey(CompatibilityStatusIcon icon) => icon switch
+    {
+        CompatibilityStatusIcon.Undecided => "CompatibilityUndecidedIconGeometry",
+        CompatibilityStatusIcon.DetectionPending => "CompatibilityDetectedIconGeometry",
+        CompatibilityStatusIcon.Enabled => "CompatibilityEnabledIconGeometry",
+        CompatibilityStatusIcon.Denied => "CompatibilityDeniedIconGeometry",
+        CompatibilityStatusIcon.Blocked => "CompatibilityBlockedIconGeometry",
+        CompatibilityStatusIcon.Operational => "CompatibilityOperationalIconGeometry",
+        CompatibilityStatusIcon.Error => "CompatibilityErrorIconGeometry",
+        _ => throw new ArgumentOutOfRangeException(nameof(icon), icon, "Unknown compatibility icon")
+    };
+
+    private void CompatibilityStatus_Click(object sender, RoutedEventArgs e)
+    {
+        var detailWindow = new CompatibilityStatusDetailWindow(_compatibilityStatusDetail)
+        {
+            Owner = this
+        };
+        detailWindow.ShowDialog();
     }
 
     private bool IsTrustedLocalTestDocument()

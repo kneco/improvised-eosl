@@ -1,5 +1,6 @@
 using ImprovisedEosl.Core;
 using ImprovisedEosl.ModalDialog;
+using ImprovisedEosl.Spike.SyncModal;
 
 var tests = new (string Name, Action Body)[]
 {
@@ -52,6 +53,9 @@ var tests = new (string Name, Action Body)[]
     ("normalizes minimized window startup state", NormalizesMinimizedWindowStartupState),
     ("captures bounded window.open scrollbars and status features", CapturesWindowOpenFeatures),
     ("keeps legacy compatibility grants and denials separate", KeepsCompatibilityDecisionsSeparate),
+    ("reports structured compatibility presentation states", ReportsStructuredCompatibilityPresentationStates),
+    ("maps compatibility states to accessible shell presentation", MapsCompatibilityStatesToAccessibleShellPresentation),
+    ("keeps operational status separate from compatibility policy", KeepsOperationalStatusSeparateFromCompatibilityPolicy),
     ("resolves raw window.open features before WebView2 hints", ResolvesWindowOpenFeatureApplication),
     ("accepts a same-origin first-child handoff", AcceptsSameOriginFirstChildHandoff),
     ("rejects unsafe and additional handoff children", RejectsUnsafeAndAdditionalHandoffChildren),
@@ -123,6 +127,122 @@ static void KeepsCompatibilityDecisionsSeparate()
     Equal(true, policy.Deny(origin, CompatibilityApi.TopLevelCloseHandoff));
     Equal(true, policy.IsDenied(origin, CompatibilityApi.TopLevelCloseHandoff));
     Equal(false, policy.GetApprovals().Contains(topLevelClose));
+}
+
+static void ReportsStructuredCompatibilityPresentationStates()
+{
+    const string origin = "https://status.example";
+    var uri = new Uri(origin);
+    var policy = new CompatibilityOriginPolicy();
+
+    var untouched = policy.GetStatus(uri);
+    Equal(CompatibilityStatusState.Undecided, untouched.State);
+    Equal(0, untouched.EnabledApis.Count);
+    Equal(0, untouched.DeniedApis.Count);
+    Equal(0, untouched.DetectedApis.Count);
+    Equal("Compatibility: off", untouched.Label);
+
+    policy.Detect("https://status.example:443", CompatibilityApi.ShowModalDialog);
+    var pending = policy.GetStatus(uri);
+    Equal(CompatibilityStatusState.DetectionPending, pending.State);
+    Equal(CompatibilityApi.ShowModalDialog, pending.DetectedApis.Single());
+
+    policy.ClearPendingDetection();
+    policy.Deny(origin, CompatibilityApi.ShowModalDialog);
+    var denied = policy.GetStatus(uri);
+    Equal(CompatibilityStatusState.Denied, denied.State);
+    Equal(CompatibilityApi.ShowModalDialog, denied.DeniedApis.Single());
+    Equal("Compatibility: off", denied.Label);
+
+    policy.Allow(origin, CompatibilityApi.WindowOpenFeatures);
+    var mixed = policy.GetStatus(uri);
+    Equal(CompatibilityStatusState.Enabled, mixed.State);
+    Equal(CompatibilityApi.WindowOpenFeatures, mixed.EnabledApis.Single());
+    Equal(CompatibilityApi.ShowModalDialog, mixed.DeniedApis.Single());
+
+    policy.Allow(origin, CompatibilityApi.ShowModalDialog);
+    var multipleEnabled = policy.GetStatus(uri);
+    Equal(CompatibilityStatusState.Enabled, multipleEnabled.State);
+    Equal(2, multipleEnabled.EnabledApis.Count);
+    Equal(0, multipleEnabled.DeniedApis.Count);
+    Equal(
+        "Compatibility: known legacy features enabled for this origin",
+        multipleEnabled.Label);
+
+    policy.ClearDecision(origin, CompatibilityApi.ShowModalDialog);
+    policy.ClearDecision(origin, CompatibilityApi.WindowOpenFeatures);
+    Equal(CompatibilityStatusState.Undecided, policy.GetStatus(uri).State);
+
+    var blocked = policy.GetStatus(new Uri("file:///C:/legacy/index.html"));
+    Equal(CompatibilityStatusState.Blocked, blocked.State);
+    Equal("opaque", blocked.Origin);
+}
+
+static void MapsCompatibilityStatesToAccessibleShellPresentation()
+{
+    const string origin = "https://status.example:443";
+    var cases = new[]
+    {
+        (CompatibilityStatusState.Undecided, "互換: 未決定", CompatibilityStatusIcon.Undecided),
+        (CompatibilityStatusState.DetectionPending, "互換: 検出済み", CompatibilityStatusIcon.DetectionPending),
+        (CompatibilityStatusState.Enabled, "互換: 有効", CompatibilityStatusIcon.Enabled),
+        (CompatibilityStatusState.Denied, "互換: 拒否", CompatibilityStatusIcon.Denied),
+        (CompatibilityStatusState.Blocked, "互換: ブロック", CompatibilityStatusIcon.Blocked)
+    };
+
+    foreach (var (state, expectedLabel, expectedIcon) in cases)
+    {
+        var status = new CompatibilityStatus(
+            origin,
+            "diagnostic label must not be parsed",
+            state,
+            state == CompatibilityStatusState.Enabled ? [CompatibilityApi.ShowModalDialog] : [],
+            state == CompatibilityStatusState.Denied ? [CompatibilityApi.WindowOpenFeatures] : [],
+            state == CompatibilityStatusState.DetectionPending ? [CompatibilityApi.TopLevelCloseHandoff] : []);
+
+        var presentation = CompatibilityStatusPresentationPolicy.Create(status);
+
+        Equal(expectedLabel, presentation.ShortLabel);
+        Equal(expectedIcon, presentation.Icon);
+        Equal(presentation.AccessibleText, presentation.DetailText);
+        Equal(true, presentation.AccessibleText.Contains(origin, StringComparison.Ordinal));
+        Equal(true, presentation.AccessibleText.Contains("有効なAPI:", StringComparison.Ordinal));
+        Equal(true, presentation.AccessibleText.Contains("拒否したAPI:", StringComparison.Ordinal));
+        Equal(true, presentation.AccessibleText.Contains("検出したAPI:", StringComparison.Ordinal));
+        Equal(false, presentation.AccessibleText.Contains(status.Label, StringComparison.Ordinal));
+    }
+
+    var mixed = CompatibilityStatusPresentationPolicy.Create(new CompatibilityStatus(
+        origin,
+        "ignored",
+        CompatibilityStatusState.Enabled,
+        [CompatibilityApi.ShowModalDialog, CompatibilityApi.WindowOpenFeatures],
+        [CompatibilityApi.TopLevelCloseHandoff],
+        []));
+    Equal(true, mixed.AccessibleText.Contains(CompatibilityApi.ShowModalDialog, StringComparison.Ordinal));
+    Equal(true, mixed.AccessibleText.Contains(CompatibilityApi.WindowOpenFeatures, StringComparison.Ordinal));
+    Equal(true, mixed.AccessibleText.Contains(CompatibilityApi.TopLevelCloseHandoff, StringComparison.Ordinal));
+}
+
+static void KeepsOperationalStatusSeparateFromCompatibilityPolicy()
+{
+    var initializing = CompatibilityStatusPresentationPolicy.CreateOperational(
+        CompatibilityOperationalStatus.Initializing);
+    Equal("互換: 確認中", initializing.ShortLabel);
+    Equal(CompatibilityStatusIcon.Operational, initializing.Icon);
+    Equal(true, initializing.AccessibleText.Contains("初期化中", StringComparison.Ordinal));
+
+    var recovering = CompatibilityStatusPresentationPolicy.CreateOperational(
+        CompatibilityOperationalStatus.Recovering);
+    Equal("互換: 確認中", recovering.ShortLabel);
+    Equal(CompatibilityStatusIcon.Operational, recovering.Icon);
+    Equal(true, recovering.AccessibleText.Contains("復旧中", StringComparison.Ordinal));
+
+    var failed = CompatibilityStatusPresentationPolicy.CreateOperational(
+        CompatibilityOperationalStatus.RecoveryFailed);
+    Equal("互換: エラー", failed.ShortLabel);
+    Equal(CompatibilityStatusIcon.Error, failed.Icon);
+    Equal(true, failed.AccessibleText.Contains("許可・拒否を表す状態ではありません", StringComparison.Ordinal));
 }
 
 static void ResolvesWindowOpenFeatureApplication()
