@@ -206,6 +206,35 @@ Exit criteria:
 - Allow enables `showModalDialog` for that origin after reload.
 - Deny leaves the origin without the compatibility shim.
 - User approval for `showModalDialog` does not enable unrelated future compatibility APIs.
+
+### Revocation on an already loaded document
+
+Issue #7 identified a stale-document edge case: a document created while `showModalDialog` was
+allowed retained the execution version of the injected JavaScript function after the user revoked
+that decision in Settings. The native broker still rejected the dialog, so the security boundary
+remained closed, but the call appeared unresponsive instead of returning to discovery and consent.
+
+Implementation constraints and assumptions:
+
+- WebView2 document-created scripts cannot be replaced retroactively on an already loaded document.
+- The injected `showModalDialog` function must therefore query the native origin policy on every
+  call, rather than selecting an execution-only or discovery-only implementation once at document
+  creation time.
+- An unapproved call uses only the existing low-privilege detection path. Revocation must not
+  expose dialog execution, broaden origin matching, or grant another compatibility API.
+- Explicit denials continue to suppress repeated prompts in the native broker.
+- Configured grants remain administrator-authored and cannot be revoked through user Settings.
+- The synchronous execution path is unchanged after the current-origin and current-policy checks
+  succeed; this fix does not alter the validated STA synchronization model.
+
+Validation:
+
+- retain the existing policy tests for allow, revoke, configured grants, and denial;
+- add a browser regression mode that loads an allowed document, revokes its runtime decision
+  without navigation, invokes the already-installed function, and proves that detection occurs
+  without opening a child dialog; and
+- manually verify allow, revoke in Settings, save, invoke again on the same page, and confirm that
+  the consent prompt reappears.
 - The user sees a clear warning that the current interrupted operation may need to be restarted from the site's top page.
 
 ## Phase 7: minimal browsing shell

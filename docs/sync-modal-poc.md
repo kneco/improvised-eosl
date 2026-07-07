@@ -88,6 +88,18 @@ Then:
 15. Click `Open missing dialog` to verify navigation failure logging.
 16. Click `Open timeout dialog` to verify timeout logging and a non-success return value.
 
+Permission-revocation regression:
+
+Passed in a normal user session on 2026-07-07: after allowing `window.showModalDialog`, revoking
+the decision in Settings, and invoking it again on the same loaded page, no child dialog opened
+and the compatibility consent prompt appeared again.
+
+1. On the discovery test page, allow `window.showModalDialog` and complete the reload.
+2. Without navigating away, open Settings, revoke that origin/API decision, and save.
+3. Invoke `window.showModalDialog` again on the already loaded page.
+4. Confirm that no child dialog opens and the compatibility consent prompt appears again.
+5. Confirm that choosing Allow reloads the page and restores the supported synchronous call.
+
 Manual result logging:
 
 - Parent call start and return events are written to `sync-modal-poc.log`.
@@ -112,6 +124,16 @@ The automatic probe opens the child dialog three times from synchronous parent h
 
 The local test pages use the `testProbe` host object. Production compatibility methods use the separate `compatibilityBroker`; non-test top-level navigations do not receive `testProbe`.
 
+The already-loaded-document revocation regression has a separate automatic mode:
+
+```powershell
+dotnet run --no-build --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --revoked-permission-auto
+```
+
+It loads the local parent with a runtime grant, removes that grant without navigation, calls the
+already-installed `window.showModalDialog` function, and exits successfully only when the call
+returns to low-privilege discovery without opening a child dialog.
+
 Parser tests:
 
 ```powershell
@@ -123,7 +145,7 @@ The parser tests cover size fields, position fields, booleans, timeout clamping,
 Latest policy-test result:
 
 - `dotnet run --no-build --project tests/ImprovisedEosl.Spike.Tests/ImprovisedEosl.Spike.Tests.csproj`
-- The current policy suite contains 57 passing checks. Earlier release notes retain their
+- The current policy suite contains 63 passing checks. Earlier release notes retain their
   historical counts.
 
 Failure-mode automatic validation:

@@ -96,22 +96,14 @@ internal static class LegacyCompatibilityBridge
                 return;
               }
 
-              if (!broker.IsShowModalDialogAllowed(origin)) {
-                Object.defineProperty(window, "showModalDialog", {
-                  configurable: true,
-                  writable: true,
-                  value: function showModalDialog() {
-                    broker.DetectLegacyApi(origin, apiName);
-                    return undefined;
-                  }
-                });
-                return;
-              }
-
               Object.defineProperty(window, "showModalDialog", {
                 configurable: true,
                 writable: true,
                 value: function showModalDialog(url, args, features) {
+                  if (!broker.IsShowModalDialogAllowed(origin)) {
+                    broker.DetectLegacyApi(origin, apiName);
+                    return undefined;
+                  }
                   const absoluteUrl = new URL(url, location.href).href;
                   const serializedArguments = JSON.stringify(args ?? null);
                   if (serializedArguments === undefined) {
