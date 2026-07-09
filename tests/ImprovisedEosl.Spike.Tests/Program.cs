@@ -67,6 +67,7 @@ var tests = new (string Name, Action Body)[]
     ("round-trips portable user settings", RoundTripsPortableUserSettings),
     ("rejects conflicting portable settings", RejectsConflictingPortableSettings),
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
+    ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
 };
 
 foreach (var test in tests)
@@ -97,6 +98,15 @@ static void CapturesWindowOpenFeatures()
     var oversized = WindowOpenFeatureCapturePolicy.Parse(new string('x', WindowOpenFeatureCapturePolicy.MaxUtf8Bytes + 1));
     Equal(false, oversized.IsValid);
     Equal("too-large", oversized.ErrorCode);
+}
+
+static void FormatsMainWindowTitleFromDocumentTitle()
+{
+    Equal("Improvised EOSL", MainWindowTitlePolicy.Format(null));
+    Equal("Improvised EOSL", MainWindowTitlePolicy.Format(""));
+    Equal("Improvised EOSL", MainWindowTitlePolicy.Format("   "));
+    Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("Legacy Order Entry"));
+    Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("  Legacy Order Entry  "));
 }
 
 static void KeepsCompatibilityDecisionsSeparate()

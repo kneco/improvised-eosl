@@ -91,6 +91,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = MainWindowTitlePolicy.Format(null);
         SetCompatibilityStatusPresentation(
             CompatibilityStatusPresentationPolicy.CreateOperational(CompatibilityOperationalStatus.Initializing));
         var args = Environment.GetCommandLineArgs();
@@ -571,6 +572,7 @@ public partial class MainWindow : Window
         webView.NavigationStarting += ParentWebView_NavigationStarting;
         webView.NavigationCompleted += ParentWebView_NavigationCompleted;
         webView.CoreWebView2.SourceChanged += CoreWebView2_SourceChanged;
+        webView.CoreWebView2.DocumentTitleChanged += ParentWebView_DocumentTitleChanged;
         webView.CoreWebView2.ProcessFailed += ParentWebView_ProcessFailed;
         webView.CoreWebView2.NewWindowRequested += ParentWebView_NewWindowRequested;
         webView.CoreWebView2.WindowCloseRequested += ParentWebView_WindowCloseRequested;
@@ -638,6 +640,14 @@ public partial class MainWindow : Window
             var oldWebView = ParentWebView;
             oldWebView.NavigationStarting -= ParentWebView_NavigationStarting;
             oldWebView.NavigationCompleted -= ParentWebView_NavigationCompleted;
+            if (oldWebView.CoreWebView2 is not null)
+            {
+                oldWebView.CoreWebView2.SourceChanged -= CoreWebView2_SourceChanged;
+                oldWebView.CoreWebView2.DocumentTitleChanged -= ParentWebView_DocumentTitleChanged;
+                oldWebView.CoreWebView2.ProcessFailed -= ParentWebView_ProcessFailed;
+                oldWebView.CoreWebView2.NewWindowRequested -= ParentWebView_NewWindowRequested;
+                oldWebView.CoreWebView2.WindowCloseRequested -= ParentWebView_WindowCloseRequested;
+            }
             ParentWebViewHost.Children.Remove(oldWebView);
             oldWebView.Dispose();
 
@@ -1143,6 +1153,7 @@ public partial class MainWindow : Window
 
     private void ParentWebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
+        Title = MainWindowTitlePolicy.Format(null);
         AddressBox.Text = e.Uri;
         if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri))
         {
@@ -1267,6 +1278,12 @@ public partial class MainWindow : Window
             UpdateCompatibilityStatus(source);
         }
         UpdateNavigationButtons();
+    }
+
+    private void ParentWebView_DocumentTitleChanged(object? sender, object e)
+    {
+        var documentTitle = ParentWebView.CoreWebView2?.DocumentTitle;
+        Title = MainWindowTitlePolicy.Format(documentTitle);
     }
 
     private async void ParentWebView_WindowCloseRequested(object? sender, object e)

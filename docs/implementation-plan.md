@@ -1046,3 +1046,26 @@ Status:
   origin-change transitions. Screen-reader, theme, high-contrast, multiple-resolution, and
   100%/150%/200% DPI checks are deferred under
   `docs/compatibility-status-display-manual-test.md`.
+
+## Phase 20: main title bar page title
+
+Goal: reflect the current document title in the native WPF title bar without changing navigation,
+permission, or compatibility execution behavior.
+
+Design decision:
+
+- Treat public Issue #12 as a browser-shell UI polish item, separate from compatibility policy.
+- Use WebView2's `DocumentTitleChanged` event for the parent WebView.
+- Keep the application identity in the title bar by formatting non-empty document titles as
+  `{document title} - Improvised EOSL`.
+- Fall back to `Improvised EOSL` when WebView2 has no document title or reports only whitespace.
+- Reset to the fallback title when navigation starts so the previous page title is not shown as a
+  stale title while the next document is loading.
+- Do not infer trust, origin, or compatibility state from the document title; the compatibility
+  status indicator remains the trust/compatibility display.
+
+Implementation gate:
+
+1. Add a pure formatting test for empty, whitespace, and non-empty document titles.
+2. Manually confirm that the Release application title changes after navigating to the built-in
+   test page and at least one ordinary HTTP(S) page.
