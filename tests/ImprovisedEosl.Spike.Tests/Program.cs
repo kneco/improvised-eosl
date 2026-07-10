@@ -1,6 +1,7 @@
 using ImprovisedEosl.Core;
 using ImprovisedEosl.ModalDialog;
 using ImprovisedEosl.Spike.SyncModal;
+using System.Windows.Input;
 
 var tests = new (string Name, Action Body)[]
 {
@@ -68,6 +69,7 @@ var tests = new (string Name, Action Body)[]
     ("rejects conflicting portable settings", RejectsConflictingPortableSettings),
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
+    ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
 };
 
 foreach (var test in tests)
@@ -108,6 +110,14 @@ static void FormatsMainWindowTitleFromDocumentTitle()
     Equal("Improvised EOSL", MainWindowTitlePolicy.Format("Improvised EOSL"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("Legacy Order Entry"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("  Legacy Order Entry  "));
+}
+
+static void RecognizesBrowserFindShortcut()
+{
+    Equal(true, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.Control));
+    Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.None));
+    Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
+    Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.G, ModifierKeys.Control));
 }
 
 static void KeepsCompatibilityDecisionsSeparate()

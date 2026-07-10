@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Input;
@@ -92,6 +93,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Title = MainWindowTitlePolicy.Format(null);
+        PreviewKeyDown += MainWindow_PreviewKeyDown;
         SetCompatibilityStatusPresentation(
             CompatibilityStatusPresentationPolicy.CreateOperational(CompatibilityOperationalStatus.Initializing));
         var args = Environment.GetCommandLineArgs();
@@ -972,6 +974,41 @@ public partial class MainWindow : Window
         {
             NavigateFromAddressBar();
             e.Handled = true;
+        }
+    }
+
+    private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!BrowserFindShortcutPolicy.IsFindShortcut(e.Key, Keyboard.Modifiers))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await OpenFindInPageAsync();
+    }
+
+    private async Task OpenFindInPageAsync()
+    {
+        if (ParentWebView.CoreWebView2 is null || _parentEnvironment is null)
+        {
+            AppendLog("find-in-page shortcut ignored before parent WebView2 initialization");
+            return;
+        }
+
+        try
+        {
+            ParentWebView.Focus();
+            var options = _parentEnvironment.CreateFindOptions();
+            options.FindTerm = string.Empty;
+            options.ShouldHighlightAllMatches = true;
+            options.SuppressDefaultFindDialog = false;
+            await ParentWebView.CoreWebView2.Find.StartAsync(options);
+            AppendLog("opened WebView2 find-in-page UI");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
+        {
+            AppendLog($"find-in-page shortcut failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
