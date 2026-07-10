@@ -1173,3 +1173,50 @@ Status:
 - Research and design are documented; no implementation is authorized or present.
 - A bounded JavaScript shim remains a feasibility hypothesis, not an accepted compatibility
   contract. Generic writable `KeyboardEvent` parity is rejected.
+
+## Phase 24: brown visual identity redesign
+
+Goal: make the wrapper visually recognizable as Improvised EOSL in normal desktop use without
+implying that it is Microsoft Edge, Internet Explorer, WebView2, or a Microsoft-supported
+compatibility product.
+
+Design decision:
+
+- Treat Issue #5 as shell visual identity work, not compatibility behavior work.
+- Replace the blue command palette with a brown palette: dark brown as the primary command/icon
+  color and pale warm brown as the hover/base surface.
+- Replace the blue `IE`-style application icon with a distinct Improvised EOSL mark that remains
+  recognizable in the title bar, taskbar, Alt+Tab, executable, and high-DPI views.
+- Keep command icons as dependency-free XAML geometry resources. Do not introduce an SVG renderer
+  or a UI icon library for this narrow WPF shell.
+- Make the address navigation icon visually distinct from the Forward browser-history icon. Forward
+  remains a simple right arrow; address navigation uses a page/enter-style mark.
+- Preserve visible text on application-specific commands and the compatibility status control.
+  Compatibility status meaning must remain available through icon geometry, short text, tooltip,
+  and UI Automation text, not color alone.
+- Keep the visual palette separate from origin policy, host-object exposure, WebView2 settings,
+  consent, diagnostics, and modal synchronization.
+
+Implementation gate:
+
+1. Update the reproducible icon source and regenerate the tracked multi-resolution `.ico`.
+2. Confirm the `.ico` still contains 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixel images.
+3. Build the solution and run the policy test executable.
+4. Publish a Release package to verify the executable embeds the updated icon.
+5. Manually inspect title-bar, taskbar, Alt+Tab, executable, enabled/disabled navigation states,
+   command icon distinction, tooltips, keyboard focus, light/dark theme, high contrast, and
+   100%/150%/200% display scale where available.
+
+Status:
+
+- Implemented in the WPF shell as a visual-only change. The command palette now uses the brown
+  shell resource colors, and the address navigation icon is visually distinct from the Forward
+  history icon.
+- The application icon generator is dependency-free Python standard library code and regenerates a
+  tracked multi-resolution `.ico` containing 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixel images.
+- The tracked icon no longer uses the former blue `IE` wordmark. It uses a brown Improvised EOSL
+  mark that was verified from the generated ICO and from the published executable's embedded icon.
+- Build, policy tests, `git diff --check`, Release package publishing, distribution layout
+  validation, and packaged `--auto` smoke passed locally.
+- Manual title-bar, taskbar, Alt+Tab, Windows theme, high-contrast, and 100%/150%/200% display-scale
+  checks remain to be run from a normal user session using `docs/visual-redesign-manual-test.md`.
