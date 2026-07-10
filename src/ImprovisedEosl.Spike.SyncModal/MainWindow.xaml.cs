@@ -979,6 +979,13 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (BrowserHelpShortcutPolicy.IsHelpShortcut(e.Key))
+        {
+            e.Handled = true;
+            AppendLog("suppressed F1 help shortcut in main browser window");
+            return;
+        }
+
         if (!BrowserFindShortcutPolicy.IsFindShortcut(e.Key, Keyboard.Modifiers))
         {
             return;

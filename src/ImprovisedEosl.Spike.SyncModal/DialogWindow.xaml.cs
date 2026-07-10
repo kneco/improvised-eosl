@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using ImprovisedEosl.Core;
 using ImprovisedEosl.ModalDialog;
@@ -33,11 +34,23 @@ public partial class DialogWindow : Window
         _rendererUnresponsiveTracker = new RendererUnresponsiveTracker(2);
         SerializedReturnValue = "undefined";
         ApplyWindowOptions(request.WindowOptions);
+        PreviewKeyDown += DialogWindow_PreviewKeyDown;
         Loaded += DialogWindow_Loaded;
         Closed += DialogWindow_Closed;
     }
 
     public string SerializedReturnValue { get; set; }
+
+    private void DialogWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!BrowserHelpShortcutPolicy.IsHelpShortcut(e.Key))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _request.Log("suppressed F1 help shortcut in dialog window");
+    }
 
     internal void AttachOwnerWindow()
     {

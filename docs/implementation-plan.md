@@ -1096,3 +1096,25 @@ Implementation gate:
 2. Confirm `Ctrl+F` opens WebView2 Find UI when focus is in web content and when focus is in the
    address field.
 3. Confirm ordinary navigation and compatibility permission/status behavior are unchanged.
+
+## Phase 22: bounded F1/help suppression
+
+Goal: support public Issue #16 by suppressing F1/help behavior in the wrapper without attempting
+general IE keyboard event-object mutation.
+
+Design decision:
+
+- Treat `<body onhelp="return false">` as an IE-era compatibility signal, but implement this phase
+  as host-level F1 suppression rather than DOM `onhelp` emulation.
+- Keep WebView2 browser accelerator keys enabled globally. Suppress only F1 when it reaches the
+  WPF host key path for the main browser window, child dialog windows, or modeless browser windows.
+- Do not add a host object, inject a page script, or expose native keyboard control to web content.
+- Do not implement `event.keyCode = 0`; that remains separate research under Issue #17.
+- Manual validation is recorded in `docs/f1-help-suppression-manual-test.md`.
+
+Implementation gate:
+
+1. Add pure shortcut-recognition coverage for F1.
+2. Confirm F1 does not open browser/help UI from web content or wrapper chrome focus.
+3. Confirm child dialog behavior, `Ctrl+F` find, ordinary navigation, compatibility status, and
+   permission prompts are unchanged.

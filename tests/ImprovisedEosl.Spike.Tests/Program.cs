@@ -70,6 +70,7 @@ var tests = new (string Name, Action Body)[]
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
     ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
+    ("recognizes browser help shortcut", RecognizesBrowserHelpShortcut),
 };
 
 foreach (var test in tests)
@@ -118,6 +119,13 @@ static void RecognizesBrowserFindShortcut()
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.None));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.G, ModifierKeys.Control));
+}
+
+static void RecognizesBrowserHelpShortcut()
+{
+    Equal(true, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F1));
+    Equal(false, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F2));
+    Equal(false, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F12));
 }
 
 static void KeepsCompatibilityDecisionsSeparate()

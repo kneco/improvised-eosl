@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 
 namespace ImprovisedEosl.Spike.SyncModal;
@@ -23,6 +24,7 @@ public partial class NewWindowObservationWindow : Window
         _displayScrollbars = displayScrollbars;
         InitializeComponent();
         StatusArea.Visibility = displayStatus ? Visibility.Visible : Visibility.Collapsed;
+        PreviewKeyDown += NewWindowObservationWindow_PreviewKeyDown;
         Loaded += (_, _) => LogNativeBounds("loaded");
         Closed += (_, _) =>
         {
@@ -32,6 +34,17 @@ public partial class NewWindowObservationWindow : Window
     }
 
     public CoreWebView2 CoreWebView2 => ObservationWebView.CoreWebView2;
+
+    private void NewWindowObservationWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!BrowserHelpShortcutPolicy.IsHelpShortcut(e.Key))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        _log("suppressed F1 help shortcut in modeless browser window");
+    }
 
     public async Task InitializeAsync(CoreWebView2Environment environment)
     {
