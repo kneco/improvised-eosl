@@ -1096,3 +1096,25 @@ Implementation gate:
 2. Confirm `Ctrl+F` opens WebView2 Find UI when focus is in web content and when focus is in the
    address field.
 3. Confirm ordinary navigation and compatibility permission/status behavior are unchanged.
+
+## Phase 22: IE onhelp syntax validation fixture
+
+Goal: make Issue #16 validation possible from the built-in home page without asking testers to
+hand-create an HTML file.
+
+Design decision:
+
+- Add `pages/onhelp-return-false.html` as a source manual-test fixture containing
+  `<body onhelp="return false">`.
+- Link the fixture from `home.html` so normal testers can open it without typing a file URL or
+  copying HTML by hand.
+- Treat the fixture as validation of current WebView2/wrapper tolerance. It does not implement
+  IE `onhelp` event emulation, F1 interception, or writable keyboard-event compatibility.
+- Keep `event.keyCode = 0` and related IE event-object mutation in Issue #17.
+
+Implementation gate:
+
+1. The fixture page loads and shows `Status: loaded` and `Error: none`.
+2. The fixture button updates the page to prove inline event handlers still run.
+3. Pressing F1 does not break the app and matches the current Improvised EOSL baseline.
+4. Ordinary navigation, compatibility status, and `Ctrl+F` find remain unchanged.
