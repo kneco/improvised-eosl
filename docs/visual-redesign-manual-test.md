@@ -4,6 +4,32 @@ Issue #5 changes the shell's visual identity only. It must not change navigation
 compatibility permission, host-object exposure, WebView2 security settings, diagnostics, or modal
 synchronization.
 
+## Latest partial result
+
+Passed in the current user session on 2026-07-10:
+
+- title-bar icon displayed the brown Improvised EOSL mark instead of the former blue `IE` wordmark;
+- command icons used the brown palette on the toolbar;
+- Back and Forward rendered as disabled at startup while Reload, address navigation, Settings,
+  Diagnostics, and the compatibility status remained enabled;
+- Forward and address navigation were visually distinct: Forward used the browser-history arrow,
+  while address navigation used the page/enter-style mark;
+- the compatibility status retained its visible short text and complete UI Automation name,
+  including origin plus enabled, denied, and detected API lists;
+- the compatibility detail window opened and displayed the same complete origin/API detail;
+- at a 760 pixel window width, the address field, Go, compatibility status, Settings, and
+  Diagnostics controls did not overlap; and
+- the published executable exposed the brown embedded application icon.
+
+Validation environment:
+
+- OS version string: `Microsoft Windows NT 10.0.26200.0`
+- WebView2 Runtime: `150.0.4078.48`
+- primary display: `1920x1080`
+- observed WPF window DPI: `96` (`100%`)
+- Windows app theme: dark
+- high contrast, taskbar, Alt+Tab, and 150%/200% display-scale checks remain pending.
+
 Run this checklist from a normal user PowerShell. Agent-launched WebView2 processes are not a
 reliable UI validation environment on every machine.
 
