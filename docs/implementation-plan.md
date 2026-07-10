@@ -1072,3 +1072,27 @@ Implementation gate:
 1. Add a pure formatting test for empty, whitespace, and non-empty document titles.
 2. Manually confirm that the Release application title changes after navigating to the built-in
    test page and at least one ordinary HTTP(S) page.
+
+## Phase 21: find in page
+
+Goal: support Issue #11's `Ctrl+F` page search without building a custom search engine or changing
+the compatibility boundary.
+
+Design decision:
+
+- Use WebView2's built-in Find UI and browser accelerator behavior.
+- Keep `CoreWebView2Settings.AreBrowserAcceleratorKeysEnabled` enabled; WebView2 documents
+  `Ctrl+F` and `F3` as browser accelerator keys for Find on Page, and the default is enabled.
+- Add a WPF `Ctrl+F` shortcut only to cover focus that is currently in the wrapper chrome, such as
+  the address field. The shortcut focuses the parent WebView2 and starts WebView2's Find session
+  with the default Find dialog visible.
+- Do not inject JavaScript search code, expose a new host object, or treat search as a
+  compatibility permission.
+- Manual validation is recorded in `docs/find-in-page-manual-test.md`.
+
+Implementation gate:
+
+1. Add pure shortcut-recognition coverage for `Ctrl+F`.
+2. Confirm `Ctrl+F` opens WebView2 Find UI when focus is in web content and when focus is in the
+   address field.
+3. Confirm ordinary navigation and compatibility permission/status behavior are unchanged.
