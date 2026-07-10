@@ -32,6 +32,7 @@ public sealed class ApplicationSettingsWindow : Window
         MinWidth = 620;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        NativeWindowVisuals.UseBrownFrame(this);
 
         var root = new Grid { Margin = new Thickness(16) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });

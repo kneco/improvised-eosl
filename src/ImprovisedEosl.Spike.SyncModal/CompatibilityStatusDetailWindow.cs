@@ -15,6 +15,7 @@ public sealed class CompatibilityStatusDetailWindow : Window
         ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        NativeWindowVisuals.UseBrownFrame(this);
 
         var detail = new TextBlock
         {

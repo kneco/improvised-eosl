@@ -33,6 +33,7 @@ public partial class DialogWindow : Window
         _rendererUnresponsiveTracker = new RendererUnresponsiveTracker(2);
         SerializedReturnValue = "undefined";
         ApplyWindowOptions(request.WindowOptions);
+        NativeWindowVisuals.UseBrownFrame(this, _request.Log);
         Loaded += DialogWindow_Loaded;
         Closed += DialogWindow_Closed;
     }

@@ -140,6 +140,7 @@ public partial class MainWindow : Window
         SetDiagnosticsVisibility(_showDiagnosticsAtStartup);
         _fileLog = new RollingFileLog(
             Path.Combine(AppContext.BaseDirectory, "artifacts", "sync-modal-poc.log"));
+        NativeWindowVisuals.UseBrownFrame(this, AppendLog);
         AppendLog($"diagnostic panel initialized: visible={_diagnosticsVisible}; fileLogging=true");
         var applicationDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
