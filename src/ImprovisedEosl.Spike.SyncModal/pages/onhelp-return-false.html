@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>onhelp return false fixture</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, "Yu Gothic UI", sans-serif;
+      background: Canvas;
+      color: CanvasText;
+    }
+
+    body {
+      margin: 2rem;
+      line-height: 1.6;
+    }
+
+    code {
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+      background: color-mix(in srgb, CanvasText 8%, Canvas);
+    }
+  </style>
+  <script>
+    window.onerror = function (message, source, lineno, colno) {
+      const error = String(message) + "@" + lineno + ":" + colno;
+      document.body.dataset.error = error;
+      const errorOutput = document.getElementById("error");
+      if (errorOutput) {
+        errorOutput.textContent = error;
+      }
+    };
+
+    window.addEventListener("DOMContentLoaded", function () {
+      document.body.dataset.loaded = "true";
+      document.getElementById("status").textContent = "loaded";
+    });
+  </script>
+</head>
+<body onhelp="return false">
+  <h1>onhelp return false fixture</h1>
+  <p>This page intentionally contains <code>&lt;body onhelp="return false"&gt;</code>.</p>
+  <p>Status: <strong id="status">loading</strong></p>
+  <p>Error: <strong id="error">none</strong></p>
+  <button type="button" onclick="document.getElementById('status').textContent = 'clicked';">
+    click test
+  </button>
+  <p>
+    Expected baseline: the page loads, the button works, and Improvised EOSL does not show a
+    browser help UI when F1 is pressed.
+  </p>
+</body>
+</html>
