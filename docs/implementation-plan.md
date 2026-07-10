@@ -1228,3 +1228,79 @@ Status:
   OS window behavior instead of implementing custom chrome.
 - Manual title-bar, taskbar, Alt+Tab, Windows theme, high-contrast, and 100%/150%/200% display-scale
   checks remain to be run from a normal user session using `docs/visual-redesign-manual-test.md`.
+
+## Phase 25: JSON-only administrator browser shell policy
+
+Goal: design Issue #3 as a post-MVP administrator/operations feature that can hide selected wrapper
+browser controls without expanding the user Settings UI or weakening WebView2/browser security.
+
+Design decision:
+
+- Treat shell policy as trusted JSON configuration, not a user-managed preference. The existing
+  application Settings window remains limited to normal-startup URL and user compatibility
+  decisions.
+- Use a default executable-relative source, `config/browser-shell-policy.json`, plus an explicit
+  `--shell-policy <path>` override. Missing policy means standard visible shell.
+- Keep policy validation fail-safe: invalid JSON, unsupported versions, unknown properties,
+  oversized files, and impossible command combinations fall back to the standard visible shell and
+  log a warning.
+- Allow `primaryToolbar:hidden` to hide the full wrapper toolbar, including Back, Forward, Reload,
+  address entry, Go, Settings, Diagnostics, compatibility status, and current-origin controls. This
+  matches line-of-business operation where browser-like escape paths are intentionally suppressed.
+- Treat full-toolbar hidden mode as an operational tradeoff, not a trust UI or security boundary.
+  Origin and compatibility status are not visible while the toolbar is hidden; recovery is through
+  command-line policy replacement or a known-good `--shell-policy` path.
+- Keep the native Windows close affordance visible and OS-owned. Do not implement custom kiosk
+  chrome in this phase.
+- Keep compatibility profiles, user-approved compatibility decisions, startup profile selection,
+  local-content loading, diagnostics logging, WebView2 storage, and modal synchronization separate
+  from shell presentation.
+- Do not disable WebView2 security, Chromium sandboxing, or browser accelerator keys as part of
+  this first shell-policy phase. Navigation accelerator suppression, if needed, requires a separate
+  design because `Ctrl+F` intentionally relies on WebView2 find/browser accelerator behavior.
+- Support offline command-line operations only: `--export-shell-policy <path>`,
+  `--apply-shell-policy <source> --shell-policy <target>`, and `--reset-user-settings`. These
+  commands should exit before WebView2 starts and must not elevate permissions or bypass operating
+  system ACLs.
+- Define `--reset-user-settings` narrowly: reset only user-managed initial URL and user
+  compatibility allow/deny decisions. Do not reset shell policy, compatibility profiles, WebView2
+  user data, cookies, local storage, release assets, or package configuration.
+
+Rejected scope:
+
+- a general-user Settings toggle for restricted shell mode;
+- in-app policy editing;
+- including shell policy in portable user settings import/export;
+- hiding native close;
+- kiosk, lockdown, DLP, or enterprise deployment guarantees;
+- origin allow-list navigation control;
+- arbitrary script rewriting, host object expansion, ActiveX/COM, or native bridges; and
+- treating legacy `window.open` chrome hints as the administrator shell-policy model.
+
+Known constraints:
+
+- Hiding wrapper navigation controls does not stop page script navigation, redirects, clicked links,
+  or all WebView2/browser accelerators.
+- The existing top-level close handoff path can hide the full toolbar as a legacy chrome
+  approximation. The administrator shell policy may produce the same presentation, but must remain
+  a separate process-level policy rather than a `window.open` compatibility side effect.
+- Policy-file write protection is an operating-system deployment responsibility. The application
+  can validate and log the policy source, but it cannot make a writable file administrator-only.
+
+Implementation gate:
+
+1. Add `docs/browser-shell-policy.md` as the version 1 contract before implementation.
+2. Add a pure Core parser/store and command-line parser with tests before WPF mutation.
+3. Add template export, policy apply, and reset-user-settings command-line modes that exit before
+   WebView2 initialization.
+4. Apply WPF shell visibility through a presentation model that can hide the complete primary
+   toolbar and does not parse localized UI text.
+5. Use `docs/browser-shell-policy-manual-test.md` to validate standard mode, restricted mode,
+   invalid-policy fail-safe, CLI export/apply/reset, ordinary navigation, compatibility consent,
+   `Ctrl+F`, diagnostics, and native close.
+
+Status:
+
+- Research/design documented in `docs/browser-shell-policy.md` and the future manual validation
+  gate is recorded in `docs/browser-shell-policy-manual-test.md`; no implementation is authorized
+  or present in this phase.
