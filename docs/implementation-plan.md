@@ -1242,11 +1242,14 @@ Design decision:
 - Use a default executable-relative source, `config/browser-shell-policy.json`, plus an explicit
   `--shell-policy <path>` override. Missing policy means standard visible shell.
 - Keep policy validation fail-safe: invalid JSON, unsupported versions, unknown properties,
-  oversized files, and attempts to hide required trust information fall back to the standard visible
-  shell and log a warning.
-- Keep the compatibility status and a current-origin display visible in every version 1 mode. If
-  the editable address entry is hidden, add a read-only origin indicator rather than relying on the
-  hidden address field.
+  oversized files, and impossible command combinations fall back to the standard visible shell and
+  log a warning.
+- Allow `primaryToolbar:hidden` to hide the full wrapper toolbar, including Back, Forward, Reload,
+  address entry, Go, Settings, Diagnostics, compatibility status, and current-origin controls. This
+  matches line-of-business operation where browser-like escape paths are intentionally suppressed.
+- Treat full-toolbar hidden mode as an operational tradeoff, not a trust UI or security boundary.
+  Origin and compatibility status are not visible while the toolbar is hidden; recovery is through
+  command-line policy replacement or a known-good `--shell-policy` path.
 - Keep the native Windows close affordance visible and OS-owned. Do not implement custom kiosk
   chrome in this phase.
 - Keep compatibility profiles, user-approved compatibility decisions, startup profile selection,
@@ -1268,7 +1271,7 @@ Rejected scope:
 - a general-user Settings toggle for restricted shell mode;
 - in-app policy editing;
 - including shell policy in portable user settings import/export;
-- hiding compatibility status/current origin/native close;
+- hiding native close;
 - kiosk, lockdown, DLP, or enterprise deployment guarantees;
 - origin allow-list navigation control;
 - arbitrary script rewriting, host object expansion, ActiveX/COM, or native bridges; and
@@ -1279,8 +1282,8 @@ Known constraints:
 - Hiding wrapper navigation controls does not stop page script navigation, redirects, clicked links,
   or all WebView2/browser accelerators.
 - The existing top-level close handoff path can hide the full toolbar as a legacy chrome
-  approximation. The administrator shell policy must not reuse that path unless it preserves the
-  required origin and compatibility trust displays.
+  approximation. The administrator shell policy may produce the same presentation, but must remain
+  a separate process-level policy rather than a `window.open` compatibility side effect.
 - Policy-file write protection is an operating-system deployment responsibility. The application
   can validate and log the policy source, but it cannot make a writable file administrator-only.
 
@@ -1290,8 +1293,8 @@ Implementation gate:
 2. Add a pure Core parser/store and command-line parser with tests before WPF mutation.
 3. Add template export, policy apply, and reset-user-settings command-line modes that exit before
    WebView2 initialization.
-4. Apply WPF shell visibility through a presentation model that keeps trust controls visible and
-   does not parse localized UI text.
+4. Apply WPF shell visibility through a presentation model that can hide the complete primary
+   toolbar and does not parse localized UI text.
 5. Use `docs/browser-shell-policy-manual-test.md` to validate standard mode, restricted mode,
    invalid-policy fail-safe, CLI export/apply/reset, ordinary navigation, compatibility consent,
    `Ctrl+F`, diagnostics, and native close.

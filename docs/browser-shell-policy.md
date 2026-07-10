@@ -14,10 +14,11 @@ operating-system permissions.
 
 This policy may control only host shell presentation:
 
-- wrapper address entry visibility;
-- wrapper back, forward, reload, and typed-address navigation command visibility;
-- wrapper Settings and Diagnostics command visibility; and
-- replacement read-only origin/status presentation required when editable navigation UI is hidden.
+- primary wrapper toolbar visibility;
+- wrapper address entry visibility when the toolbar is visible;
+- wrapper back, forward, reload, and typed-address navigation command visibility when the toolbar
+  is visible; and
+- wrapper Settings and Diagnostics command visibility when the toolbar is visible.
 
 This policy must not:
 
@@ -27,13 +28,13 @@ This policy must not:
 - modify configured compatibility profiles or user-approved compatibility decisions;
 - rewrite page script or inject a new host object;
 - intercept arbitrary native commands;
-- claim kiosk, lockdown, or data-loss-prevention behavior; or
+- claim kiosk, lockdown, or data-loss-prevention behavior;
+- prevent all WebView2/browser accelerator behavior; or
 - hide the native window close affordance.
 
 The existing `window.open` and top-level close handoff feature handling may approximate legacy
 popup chrome. That path is compatibility behavior. The administrator shell policy must be modeled
-separately and must not reuse the current all-toolbar hide path if doing so would hide origin or
-compatibility trust information.
+separately, even if the final restricted presentation also hides the full primary toolbar.
 
 ## Trust model
 
@@ -56,45 +57,64 @@ the policy file during normal browsing.
 {
   "version": 1,
   "browserShell": {
+    "primaryToolbar": "visible",
     "addressEntry": "editable",
     "historyCommands": "visible",
     "reloadCommand": "visible",
     "goCommand": "visible",
     "settingsCommand": "visible",
-    "diagnosticsCommand": "visible",
-    "compatibilityStatus": "visible",
-    "currentOrigin": "visible"
+    "diagnosticsCommand": "visible"
   }
 }
 ```
 
 Allowed values:
 
+- `primaryToolbar`: `visible` or `hidden`
 - `addressEntry`: `editable` or `hidden`
 - `historyCommands`: `visible` or `hidden`
 - `reloadCommand`: `visible` or `hidden`
 - `goCommand`: `visible` or `hidden`
 - `settingsCommand`: `visible` or `hidden`
 - `diagnosticsCommand`: `visible` or `hidden`
-- `compatibilityStatus`: must be `visible` in version 1
-- `currentOrigin`: must be `visible` in version 1
 
 Rules:
 
 - Unknown root, section, or property names fail the file closed.
 - Missing optional command properties default to `visible`.
-- `compatibilityStatus` and `currentOrigin` are required trust information and cannot be hidden in
-  version 1.
-- If `addressEntry` is `hidden`, the shell must still show a read-only current-origin indicator.
+- `primaryToolbar:hidden` hides the complete wrapper toolbar: Back, Forward, Reload, address entry,
+  Go, Settings, Diagnostics, compatibility status, and current-origin display.
+- The native window title bar and close affordance remain visible and OS-owned when
+  `primaryToolbar` is hidden.
+- If `primaryToolbar` is `hidden`, individual toolbar command values are ignored and this
+  normalization should be logged.
 - If `addressEntry` is `hidden`, `goCommand` must be treated as `hidden` even if the file says
   `visible`; this normalization should be logged as an approximation.
 - File size should use the existing 1 MiB configuration limit and JSON depth should remain bounded
   to 32.
 
-Invalid JSON, unsupported versions, unknown properties, oversized files, and impossible trust
-settings must fail safe to the built-in standard shell and log a warning. The standard shell means
-the address entry, browser commands, Settings, Diagnostics, compatibility status, and current origin
-are all visible.
+Invalid JSON, unsupported versions, unknown properties, oversized files, and impossible command
+combinations must fail safe to the built-in standard shell and log a warning. The standard shell
+means the primary toolbar, address entry, browser commands, Settings, Diagnostics, compatibility
+status, and current origin are all visible.
+
+## Full-toolbar hidden mode
+
+`primaryToolbar:hidden` is allowed because many line-of-business deployments intentionally suppress
+Back, Forward, Reload, and direct address entry so operators stay inside the application workflow.
+In this mode the in-window origin and compatibility status controls are also hidden with the toolbar.
+That is an explicit operational tradeoff, not a security guarantee.
+
+Recovery from a bad full-toolbar policy is command-line based:
+
+- start once with a known-good `--shell-policy <path>`;
+- use `--export-shell-policy <path>` to generate a visible-toolbar template;
+- use `--apply-shell-policy <source> --shell-policy <target>` to replace the deployed policy; or
+- use `--reset-user-settings` for user-managed startup URL and compatibility decisions.
+
+`--reset-user-settings` does not reset the administrator shell policy. It is a recovery path for
+ordinary user state only. Restoring a hidden toolbar requires replacing the policy file or launching
+with another policy path.
 
 ## Command-line operations
 
@@ -156,9 +176,10 @@ Shell policy is process-level host configuration, not origin-scoped page permiss
    reset-user-settings target selection.
 3. Apply the presentation in WPF without changing compatibility policy, startup profile selection,
    WebView2 settings, local-content loading, or modal synchronization.
-4. When address entry is hidden, add a read-only current-origin control before hiding the editable
-   address field.
-5. Keep the compatibility status control visible and keyboard accessible in every mode.
+4. Implement `primaryToolbar:hidden` as a full toolbar hide, including address entry, navigation
+   commands, Settings, Diagnostics, compatibility status, and current-origin controls.
+5. Keep native close visible and verify command-line recovery before treating full-toolbar hidden
+   mode as usable.
 6. Add a manual test that verifies restricted mode, invalid-policy fail-safe, CLI export/apply,
    reset-user-settings, ordinary browsing, compatibility consent, `Ctrl+F`, diagnostics logging,
    and native close behavior.

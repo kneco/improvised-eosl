@@ -21,31 +21,30 @@ already implemented.
 
 ## Restricted mode
 
-Use a policy that hides editable navigation and wrapper browser commands while keeping trust
-information visible:
+Use a policy that hides the complete primary toolbar:
 
 ```json
 {
   "version": 1,
   "browserShell": {
+    "primaryToolbar": "hidden",
     "addressEntry": "hidden",
     "historyCommands": "hidden",
     "reloadCommand": "hidden",
     "goCommand": "hidden",
     "settingsCommand": "hidden",
-    "diagnosticsCommand": "visible",
-    "compatibilityStatus": "visible",
-    "currentOrigin": "visible"
+    "diagnosticsCommand": "hidden"
   }
 }
 ```
 
 1. Start with `--shell-policy <path-to-policy>`.
-2. Confirm the editable address entry and Back/Forward/Reload/Go/Settings commands are hidden.
-3. Confirm a read-only current-origin display remains visible after navigation.
-4. Confirm the compatibility status control remains visible, focusable, and opens its detail.
-5. Confirm the native Windows title bar and close button remain visible.
-6. Confirm the diagnostic log records the loaded policy path and normalized mode.
+2. Confirm Back/Forward/Reload, editable address entry, Go, Settings, Diagnostics, compatibility
+   status, and current-origin controls are all hidden.
+3. Confirm the native Windows title bar and close button remain visible.
+4. Confirm ordinary in-page application workflow still works.
+5. Confirm the diagnostic log records the loaded policy path, `primaryToolbar:hidden`, and ignored
+   child command values.
 
 ## Fail-safe policy handling
 
@@ -56,8 +55,7 @@ with a warning in the diagnostic log:
 - unsupported `version`;
 - unknown root property;
 - unknown `browserShell` property;
-- `compatibilityStatus` set to `hidden`;
-- `currentOrigin` set to `hidden`; and
+- invalid `primaryToolbar` value; and
 - file larger than the configured maximum.
 
 ## Command-line operations
@@ -79,8 +77,7 @@ with a warning in the diagnostic log:
 1. Navigate to the built-in compatibility test page in standard mode.
 2. Trigger `window.showModalDialog`, allow compatibility, and reload.
 3. Restart in restricted mode with the same user decision.
-4. Confirm the compatibility status still shows the enabled state and the modal behavior still
-   depends only on origin/API permission, not shell visibility.
+4. Confirm the modal behavior still depends only on origin/API permission, not shell visibility.
 5. Revoke the user decision after returning to standard mode and confirm shell policy is unchanged.
 
 ## Security boundary
@@ -90,6 +87,6 @@ The feature must not:
 - disable WebView2 security or sandbox settings;
 - grant compatibility APIs;
 - include shell policy in user settings import/export;
-- hide native close, current origin, or compatibility status;
+- hide native close;
 - expose policy mutation to web content; or
 - claim kiosk or enterprise lockdown enforcement.

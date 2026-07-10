@@ -242,9 +242,11 @@ It controls wrapper chrome presentation, not legacy API permission. General user
 Settings UI for this surface; administrators can provide JSON configuration protected by operating
 system file ownership and ACLs.
 
-The policy must not hide all trust information. If editable navigation is hidden, the shell must
-still show a read-only current origin and the compatibility status/detail control. The native
-Windows close affordance remains OS-owned and visible.
+The restricted policy may hide the complete primary toolbar, including origin and compatibility
+status controls, because some line-of-business deployments intentionally suppress browser
+navigation and wrapper commands. This is an operational presentation mode, not a kiosk or security
+boundary. The native Windows close affordance remains OS-owned and visible, and recovery from a bad
+policy is handled through command-line policy replacement rather than a general-user Settings UI.
 
 Version 1 policy design and command-line operations are documented in
 `docs/browser-shell-policy.md`.
