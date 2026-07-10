@@ -235,6 +235,20 @@ The compatibility status indicator should show at least:
 
 This status is not a security boundary by itself. It is a user-visible reflection of the compatibility profile decision.
 
+## Administrator browser shell policy
+
+The post-MVP browser-shell policy is separate from both user settings and compatibility profiles.
+It controls wrapper chrome presentation, not legacy API permission. General users should not get a
+Settings UI for this surface; administrators can provide JSON configuration protected by operating
+system file ownership and ACLs.
+
+The policy must not hide all trust information. If editable navigation is hidden, the shell must
+still show a read-only current origin and the compatibility status/detail control. The native
+Windows close affordance remains OS-owned and visible.
+
+Version 1 policy design and command-line operations are documented in
+`docs/browser-shell-policy.md`.
+
 ## Security boundary
 
 Compatibility behavior must be enabled only for explicitly allowed origins.
