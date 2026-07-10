@@ -1118,3 +1118,58 @@ Implementation gate:
 2. The fixture button updates the page to prove inline event handlers still run.
 3. Pressing F1 does not break the app and matches the current Improvised EOSL baseline.
 4. Ordinary navigation, compatibility status, and `Ctrl+F` find remain unchanged.
+
+## Phase 23: IE keyboard event mutation research gate
+
+Goal: determine whether a narrowly scoped compatibility feature for IE-era keyboard event
+mutation is justified and safe without expanding Improvised EOSL into general IE DOM emulation.
+
+Research decision:
+
+- Treat writable `IHTMLEventObj.keyCode` as genuine IE-era behavior, but do not assume that every
+  `event.keyCode = 0` assignment cancelled the same browser action. The assignment's effect on
+  later handlers, default actions, and host accelerators requires reference measurement.
+- Treat this as a potentially high-value post-MVP compatibility feature. Deferral is a sequencing
+  and evidence decision, not a conclusion that the feature lacks product value.
+- Do not implement a shim until a real target-page pattern or a controlled reference fixture
+  demonstrates a WebView2-visible incompatibility and the intended IE behavior.
+- Keep Issue #17 separate from Issue #16. F1/`onhelp` host behavior does not establish general
+  keyboard-event mutation semantics.
+- Record the detailed feasibility, security boundary, rejected scope, and measurement matrix in
+  `docs/ie-keyboard-event-mutation-research.md`.
+
+Security and permission boundary:
+
+- Any future behavior-changing shim is a new compatibility API permission, scoped to an exact
+  normalized HTTP(S) origin. Existing approval for `showModalDialog`, window features, top-level
+  close handoff, or `onhelp` validation must not enable it.
+- The first candidate scope is the approved top-level document only. All child frames and opaque
+  origins fail closed; frame support requires a separate origin-validation design.
+- Enabling or revoking the feature requires reload so document-created instrumentation has an
+  unambiguous lifetime.
+- Do not record typed characters, key values, or target-field contents in diagnostics. Log only
+  activation, blocked use, and bounded compatibility outcome categories.
+- Do not add ActiveX/COM, a per-keystroke host-object/native bridge, arbitrary script rewriting,
+  or browser security exceptions.
+
+Measurement gate before any implementation proposal:
+
+1. Capture the smallest real handler pattern that fails, including event type, phase, target,
+   assignment, subsequent reads, propagation controls, and expected default action.
+2. Compare that pattern in the agreed IE reference environment and current WebView2, recording
+   script-visible values separately from final browser behavior.
+3. Measure `window.event`, `returnValue`, `cancelBubble`, `keypress`, `charCode`, `which`, and
+   `keyIdentifier` independently; do not bundle them into one compatibility claim.
+4. Test whether per-event JavaScript instrumentation can observe the assignment and map only the
+   proven cancellation case to `preventDefault()` or `stopPropagation()` without synthetic event
+   redispatch or native key interception.
+5. Verify exact-origin consent, reload/revocation, top-level-only behavior, navigation, input-field
+   handling, browser accelerators, and diagnostics that contain no key data.
+6. Decide from the evidence whether to reject the feature, retain a measurement fixture only, or
+   propose a separately approved bounded shim.
+
+Status:
+
+- Research and design are documented; no implementation is authorized or present.
+- A bounded JavaScript shim remains a feasibility hypothesis, not an accepted compatibility
+  contract. Generic writable `KeyboardEvent` parity is rejected.
