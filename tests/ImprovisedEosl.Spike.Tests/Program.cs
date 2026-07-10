@@ -70,6 +70,7 @@ var tests = new (string Name, Action Body)[]
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
     ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
+    ("converts native window colors to COLORREF", ConvertsNativeWindowColorsToColorRef),
 };
 
 foreach (var test in tests)
@@ -118,6 +119,12 @@ static void RecognizesBrowserFindShortcut()
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.None));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.G, ModifierKeys.Control));
+}
+
+static void ConvertsNativeWindowColorsToColorRef()
+{
+    Equal(0x001E140A, NativeWindowVisuals.ToColorRef(0x0A, 0x14, 0x1E));
+    Equal(0x00EDECF5, NativeWindowVisuals.ToColorRef(245, 236, 237));
 }
 
 static void KeepsCompatibilityDecisionsSeparate()

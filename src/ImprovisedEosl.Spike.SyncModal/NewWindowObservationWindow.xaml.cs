@@ -22,6 +22,7 @@ public partial class NewWindowObservationWindow : Window
         _log = log;
         _displayScrollbars = displayScrollbars;
         InitializeComponent();
+        NativeWindowVisuals.UseBrownFrame(this, _log);
         StatusArea.Visibility = displayStatus ? Visibility.Visible : Visibility.Collapsed;
         Loaded += (_, _) => LogNativeBounds("loaded");
         Closed += (_, _) =>

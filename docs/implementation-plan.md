@@ -1187,6 +1187,11 @@ Design decision:
   color and pale warm brown as the hover/base surface.
 - Replace the blue `IE`-style application icon with a distinct Improvised EOSL mark that remains
   recognizable in the title bar, taskbar, Alt+Tab, executable, and high-DPI views.
+- Tint the native Windows frame through DWM attributes where supported so the standard title bar,
+  resize, Snap, system menu, and accessibility behavior remain OS-owned. Do not replace the frame
+  with custom chrome in this phase.
+- Skip frame tinting when Windows high contrast is active. On unsupported Windows versions or DWM
+  failure, leave the native frame unchanged and continue normally.
 - Keep command icons as dependency-free XAML geometry resources. Do not introduce an SVG renderer
   or a UI icon library for this narrow WPF shell.
 - Make the address navigation icon visually distinct from the Forward browser-history icon. Forward
@@ -1218,5 +1223,8 @@ Status:
   mark that was verified from the generated ICO and from the published executable's embedded icon.
 - Build, policy tests, `git diff --check`, Release package publishing, distribution layout
   validation, and packaged `--auto` smoke passed locally.
+- Native frame tinting is applied through `DwmSetWindowAttribute` for supported Windows 11
+  environments and is skipped for high contrast or unsupported DWM attributes. This keeps standard
+  OS window behavior instead of implementing custom chrome.
 - Manual title-bar, taskbar, Alt+Tab, Windows theme, high-contrast, and 100%/150%/200% display-scale
   checks remain to be run from a normal user session using `docs/visual-redesign-manual-test.md`.

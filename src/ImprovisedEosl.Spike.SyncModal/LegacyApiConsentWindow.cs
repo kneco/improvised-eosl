@@ -25,6 +25,7 @@ public sealed class LegacyApiConsentWindow : Window
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        NativeWindowVisuals.UseBrownFrame(this);
 
         var root = new StackPanel { Margin = new Thickness(18) };
         root.Children.Add(new TextBlock
