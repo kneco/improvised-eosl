@@ -1177,6 +1177,7 @@ public partial class MainWindow : Window
         {
             _parentUnresponsiveReloading = false;
             ScheduleParentRendererHangForAutomaticValidation();
+            UpdateMainWindowTitleFromDocument();
         }
         UpdateNavigationButtons();
         if (ParentWebView.Source is not null)
@@ -1282,8 +1283,12 @@ public partial class MainWindow : Window
 
     private void ParentWebView_DocumentTitleChanged(object? sender, object e)
     {
-        var documentTitle = ParentWebView.CoreWebView2?.DocumentTitle;
-        Title = MainWindowTitlePolicy.Format(documentTitle);
+        UpdateMainWindowTitleFromDocument();
+    }
+
+    private void UpdateMainWindowTitleFromDocument()
+    {
+        Title = MainWindowTitlePolicy.Format(ParentWebView.CoreWebView2?.DocumentTitle);
     }
 
     private async void ParentWebView_WindowCloseRequested(object? sender, object e)

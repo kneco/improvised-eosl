@@ -1061,6 +1061,9 @@ Design decision:
 - Fall back to `Improvised EOSL` when WebView2 has no document title or reports only whitespace.
 - Reset to the fallback title when navigation starts so the previous page title is not shown as a
   stale title while the next document is loading.
+- Re-read WebView2's `DocumentTitle` after successful navigation completion as a fallback in case
+  the title change event is not enough to update the native title bar on every runtime.
+- Do not duplicate the application title when the document itself is titled `Improvised EOSL`.
 - Do not infer trust, origin, or compatibility state from the document title; the compatibility
   status indicator remains the trust/compatibility display.
 

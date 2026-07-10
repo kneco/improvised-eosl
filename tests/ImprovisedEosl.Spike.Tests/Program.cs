@@ -105,6 +105,7 @@ static void FormatsMainWindowTitleFromDocumentTitle()
     Equal("Improvised EOSL", MainWindowTitlePolicy.Format(null));
     Equal("Improvised EOSL", MainWindowTitlePolicy.Format(""));
     Equal("Improvised EOSL", MainWindowTitlePolicy.Format("   "));
+    Equal("Improvised EOSL", MainWindowTitlePolicy.Format("Improvised EOSL"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("Legacy Order Entry"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("  Legacy Order Entry  "));
 }
