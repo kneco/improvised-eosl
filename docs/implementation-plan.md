@@ -1099,15 +1099,19 @@ Implementation gate:
 
 ## Phase 22: bounded F1/help suppression
 
-Goal: support public Issue #16 by suppressing F1/help behavior in the wrapper without attempting
-general IE keyboard event-object mutation.
+Goal: support public Issue #16 by suppressing F1/help behavior only when the current page contains
+an IE-era `onhelp` suppression handler, without attempting general IE keyboard event-object
+mutation.
 
 Design decision:
 
-- Treat `<body onhelp="return false">` as an IE-era compatibility signal, but implement this phase
-  as host-level F1 suppression rather than DOM `onhelp` emulation.
-- Keep WebView2 browser accelerator keys enabled globally. Suppress only F1 when it reaches the
-  WPF host key path for the main browser window, child dialog windows, or modeless browser windows.
+- Treat `<body onhelp="return false">` as an IE-era compatibility signal. Detect that signal in the
+  current document after successful navigation and reset the decision on the next navigation start.
+- Implement this phase as host-level conditional F1 suppression rather than DOM `onhelp` event
+  emulation.
+- Keep WebView2 browser accelerator keys enabled globally. Suppress only F1, and only when the
+  current document requested suppression, when it reaches the WPF host key path for the main
+  browser window, child dialog windows, or modeless browser windows.
 - Do not add a host object, inject a page script, or expose native keyboard control to web content.
 - Do not implement `event.keyCode = 0`; that remains separate research under Issue #17.
 - Manual validation is recorded in `docs/f1-help-suppression-manual-test.md`.
@@ -1115,6 +1119,9 @@ Design decision:
 Implementation gate:
 
 1. Add pure shortcut-recognition coverage for F1.
-2. Confirm F1 does not open browser/help UI from web content or wrapper chrome focus.
-3. Confirm child dialog behavior, `Ctrl+F` find, ordinary navigation, compatibility status, and
+2. Confirm F1 is not suppressed by default on a page without `onhelp="return false"`.
+3. Confirm F1 does not open browser/help UI from web content or wrapper chrome focus when the
+   current page contains `onhelp="return false"`.
+4. Confirm the suppression decision is reset after navigation away from that page.
+5. Confirm child dialog behavior, `Ctrl+F` find, ordinary navigation, compatibility status, and
    permission prompts are unchanged.

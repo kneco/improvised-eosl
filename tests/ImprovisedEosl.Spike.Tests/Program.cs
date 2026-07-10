@@ -71,6 +71,7 @@ var tests = new (string Name, Action Body)[]
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
     ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
     ("recognizes browser help shortcut", RecognizesBrowserHelpShortcut),
+    ("recognizes legacy onhelp suppression script result", RecognizesLegacyOnHelpSuppressionScriptResult),
 };
 
 foreach (var test in tests)
@@ -126,6 +127,15 @@ static void RecognizesBrowserHelpShortcut()
     Equal(true, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F1));
     Equal(false, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F2));
     Equal(false, BrowserHelpShortcutPolicy.IsHelpShortcut(Key.F12));
+}
+
+static void RecognizesLegacyOnHelpSuppressionScriptResult()
+{
+    Equal(true, BrowserHelpShortcutPolicy.IsSuppressionRequested("true"));
+    Equal(true, BrowserHelpShortcutPolicy.IsSuppressionRequested(" true "));
+    Equal(false, BrowserHelpShortcutPolicy.IsSuppressionRequested("false"));
+    Equal(false, BrowserHelpShortcutPolicy.IsSuppressionRequested("null"));
+    Equal(false, BrowserHelpShortcutPolicy.IsSuppressionRequested(null));
 }
 
 static void KeepsCompatibilityDecisionsSeparate()

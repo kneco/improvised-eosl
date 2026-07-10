@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>F1 help suppression fixture</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; margin: 2rem; }
+    code { background: #f3eee8; padding: 0.1rem 0.3rem; }
+  </style>
+</head>
+<body onhelp="return false">
+  <h1>F1 help suppression fixture</h1>
+  <p>This page intentionally contains <code>&lt;body onhelp="return false"&gt;</code>.</p>
+  <p>When this page is current, the wrapper should suppress F1 help behavior.</p>
+  <p>
+    <button type="button" onclick="window.showModalDialog('f1-help-suppression.html', null, 'dialogWidth:520px;dialogHeight:320px;')">
+      Open same fixture as modal dialog
+    </button>
+  </p>
+</body>
+</html>

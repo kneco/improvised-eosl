@@ -1,8 +1,9 @@
 # F1/help suppression manual test
 
-Issue #16 is intentionally implemented as a bounded browser-shell key handling behavior. It does
-not emulate IE's `onhelp` DOM event and does not implement writable IE keyboard event objects such
-as `event.keyCode = 0`.
+Issue #16 is intentionally implemented as a bounded browser-shell key handling behavior. It
+suppresses F1 only when the current document contains an IE-era `onhelp` suppression handler such
+as `<body onhelp="return false">`. It does not emulate IE's `onhelp` DOM event and does not
+implement writable IE keyboard event objects such as `event.keyCode = 0`.
 
 ## Preconditions
 
@@ -16,18 +17,25 @@ dotnet run --configuration Release --project src\ImprovisedEosl.Spike.SyncModal\
 
 ## Checks
 
-1. Open the built-in home or parent test page.
-2. With focus in web content, press `F1`.
+1. Open an ordinary page that does not contain `onhelp="return false"` and press `F1`.
+   - Expected: the wrapper does not suppress F1 solely by default.
+2. Open the built-in `f1-help-suppression.html` page, which contains
+   `onhelp="return false"`.
+3. With focus in web content, press `F1`.
    - Expected: no browser/help UI opens.
    - Expected: the app remains responsive.
-3. With focus in the address field or another wrapper chrome control, press `F1`.
+4. With focus in the address field or another wrapper chrome control while that page is current,
+   press `F1`.
    - Expected: no browser/help UI opens.
    - Expected: focus and normal operation are preserved.
-4. Open a child `showModalDialog()` window and press `F1` with focus in the child content.
+5. Navigate away to a page without `onhelp="return false"` and press `F1`.
+   - Expected: the previous page's suppression decision is not retained.
+6. From `f1-help-suppression.html`, open the same fixture as a child `showModalDialog()` window
+   and press `F1` with focus in the child content.
    - Expected: no browser/help UI opens.
    - Expected: modal return/cancel behavior is unchanged.
-5. Confirm `Ctrl+F` still opens the WebView2 Find UI.
-6. Confirm ordinary navigation, compatibility status, and compatibility permission prompts are
+7. Confirm `Ctrl+F` still opens the WebView2 Find UI.
+8. Confirm ordinary navigation, compatibility status, and compatibility permission prompts are
    unchanged.
 
 ## Security boundary

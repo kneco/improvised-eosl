@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Runtime.InteropServices;
 using ImprovisedEosl.Core;
 using ImprovisedEosl.ModalDialog;
 using Microsoft.Web.WebView2.Core;
@@ -25,6 +26,7 @@ public partial class DialogWindow : Window
     private bool _rendererFailureClosing;
     private bool _closed;
     private bool _ownerWasEnabled;
+    private bool _suppressF1HelpForCurrentDocument;
     private int _ownerRestored;
 
     public DialogWindow(DialogRequest request)
@@ -48,8 +50,13 @@ public partial class DialogWindow : Window
             return;
         }
 
+        if (!_suppressF1HelpForCurrentDocument)
+        {
+            return;
+        }
+
         e.Handled = true;
-        _request.Log("suppressed F1 help shortcut in dialog window");
+        _request.Log("suppressed F1 help shortcut requested by current document in dialog window");
     }
 
     internal void AttachOwnerWindow()
@@ -407,7 +414,7 @@ public partial class DialogWindow : Window
         Dispatcher.BeginInvoke(Close);
     }
 
-    private void ChildWebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    private async void ChildWebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
         if (_navigationBlocked)
         {
@@ -417,6 +424,7 @@ public partial class DialogWindow : Window
         if (e.IsSuccess && e.HttpStatusCode < 400)
         {
             _request.Log($"child navigation completed: status={e.HttpStatusCode}");
+            await UpdateF1HelpSuppressionForCurrentDocumentAsync();
             ScheduleNativeCloseForAutomaticValidation();
             ScheduleRendererCrashForAutomaticValidation();
             ScheduleBrowserCrashForAutomaticValidation();
@@ -611,6 +619,7 @@ public partial class DialogWindow : Window
 
     private void ChildWebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
+        _suppressF1HelpForCurrentDocument = false;
         var validation = DialogNavigationPolicy.Validate(e.Uri);
         if (validation.IsValid)
         {
@@ -625,5 +634,29 @@ public partial class DialogWindow : Window
         _request.Log(
             $"child navigation blocked: url={DialogNavigationPolicy.FormatForLog(e.Uri)}; reason={validation.ErrorCode}");
         Dispatcher.BeginInvoke(Close);
+    }
+
+    private async Task UpdateF1HelpSuppressionForCurrentDocumentAsync()
+    {
+        if (ChildWebView.CoreWebView2 is null)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            return;
+        }
+
+        try
+        {
+            var result = await ChildWebView.CoreWebView2.ExecuteScriptAsync(
+                BrowserHelpShortcutPolicy.SuppressionDetectionScript);
+            _suppressF1HelpForCurrentDocument = BrowserHelpShortcutPolicy.IsSuppressionRequested(result);
+            _request.Log(
+                $"F1 help suppression detection completed in dialog window: " +
+                $"enabled={_suppressF1HelpForCurrentDocument}");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            _request.Log($"F1 help suppression detection failed in dialog window: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }

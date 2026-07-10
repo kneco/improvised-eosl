@@ -79,6 +79,7 @@ public partial class MainWindow : Window
     private readonly HashSet<NewWindowObservationWindow> _modelessWindows = [];
     private WindowState _lastNonMinimizedWindowState = WindowState.Normal;
     private string _compatibilityStatusDetail = string.Empty;
+    private bool _suppressF1HelpForCurrentDocument;
 
     private sealed record PendingTopLevelHandoff(
         Uri TargetUri,
@@ -981,8 +982,13 @@ public partial class MainWindow : Window
     {
         if (BrowserHelpShortcutPolicy.IsHelpShortcut(e.Key))
         {
+            if (!_suppressF1HelpForCurrentDocument)
+            {
+                return;
+            }
+
             e.Handled = true;
-            AppendLog("suppressed F1 help shortcut in main browser window");
+            AppendLog("suppressed F1 help shortcut requested by current document in main browser window");
             return;
         }
 
@@ -1197,6 +1203,7 @@ public partial class MainWindow : Window
 
     private void ParentWebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
+        _suppressF1HelpForCurrentDocument = false;
         Title = MainWindowTitlePolicy.Format(null);
         AddressBox.Text = e.Uri;
         if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri))
@@ -1222,6 +1229,7 @@ public partial class MainWindow : Window
             _parentUnresponsiveReloading = false;
             ScheduleParentRendererHangForAutomaticValidation();
             UpdateMainWindowTitleFromDocument();
+            await UpdateF1HelpSuppressionForCurrentDocumentAsync();
         }
         UpdateNavigationButtons();
         if (ParentWebView.Source is not null)
@@ -1333,6 +1341,30 @@ public partial class MainWindow : Window
     private void UpdateMainWindowTitleFromDocument()
     {
         Title = MainWindowTitlePolicy.Format(ParentWebView.CoreWebView2?.DocumentTitle);
+    }
+
+    private async Task UpdateF1HelpSuppressionForCurrentDocumentAsync()
+    {
+        if (ParentWebView.CoreWebView2 is null)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            return;
+        }
+
+        try
+        {
+            var result = await ParentWebView.CoreWebView2.ExecuteScriptAsync(
+                BrowserHelpShortcutPolicy.SuppressionDetectionScript);
+            _suppressF1HelpForCurrentDocument = BrowserHelpShortcutPolicy.IsSuppressionRequested(result);
+            AppendLog(
+                $"F1 help suppression detection completed in main browser window: " +
+                $"enabled={_suppressF1HelpForCurrentDocument}");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            AppendLog($"F1 help suppression detection failed in main browser window: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     private async void ParentWebView_WindowCloseRequested(object? sender, object e)

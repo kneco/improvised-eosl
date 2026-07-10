@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
@@ -14,6 +15,7 @@ public partial class NewWindowObservationWindow : Window
         TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly bool _displayScrollbars;
+    private bool _suppressF1HelpForCurrentDocument;
 
     public NewWindowObservationWindow(
         bool displayScrollbars,
@@ -42,8 +44,13 @@ public partial class NewWindowObservationWindow : Window
             return;
         }
 
+        if (!_suppressF1HelpForCurrentDocument)
+        {
+            return;
+        }
+
         e.Handled = true;
-        _log("suppressed F1 help shortcut in modeless browser window");
+        _log("suppressed F1 help shortcut requested by current document in modeless browser window");
     }
 
     public async Task InitializeAsync(CoreWebView2Environment environment)
@@ -51,8 +58,12 @@ public partial class NewWindowObservationWindow : Window
         await ObservationWebView.EnsureCoreWebView2Async(environment)
             .WaitAsync(TimeSpan.FromSeconds(30));
         ObservationWebView.CoreWebView2.WindowCloseRequested += (_, _) => Close();
-        ObservationWebView.CoreWebView2.SourceChanged += (_, _) => UpdateStatusText();
-        ObservationWebView.CoreWebView2.NavigationCompleted += (_, args) =>
+        ObservationWebView.CoreWebView2.SourceChanged += (_, _) =>
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            UpdateStatusText();
+        };
+        ObservationWebView.CoreWebView2.NavigationCompleted += async (_, args) =>
         {
             _initialNavigation.TrySetResult(args.IsSuccess);
             if (!ObservationWebView.CoreWebView2.Source.Equals(
@@ -60,6 +71,10 @@ public partial class NewWindowObservationWindow : Window
                     StringComparison.OrdinalIgnoreCase))
             {
                 _nonBlankNavigation.TrySetResult(args.IsSuccess);
+            }
+            if (args.IsSuccess)
+            {
+                await UpdateF1HelpSuppressionForCurrentDocumentAsync();
             }
         };
         if (!_displayScrollbars)
@@ -121,5 +136,29 @@ public partial class NewWindowObservationWindow : Window
         StatusText.Text = Uri.TryCreate(source, UriKind.Absolute, out var uri)
             ? $"{uri.Scheme}://{uri.Authority}"
             : "Status";
+    }
+
+    private async Task UpdateF1HelpSuppressionForCurrentDocumentAsync()
+    {
+        if (ObservationWebView.CoreWebView2 is null)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            return;
+        }
+
+        try
+        {
+            var result = await ObservationWebView.CoreWebView2.ExecuteScriptAsync(
+                BrowserHelpShortcutPolicy.SuppressionDetectionScript);
+            _suppressF1HelpForCurrentDocument = BrowserHelpShortcutPolicy.IsSuppressionRequested(result);
+            _log(
+                $"F1 help suppression detection completed in modeless browser window: " +
+                $"enabled={_suppressF1HelpForCurrentDocument}");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or COMException)
+        {
+            _suppressF1HelpForCurrentDocument = false;
+            _log($"F1 help suppression detection failed in modeless browser window: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }
