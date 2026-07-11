@@ -60,51 +60,55 @@ the policy file during normal browsing.
 {
   "version": 1,
   "browserShell": {
-    "primaryToolbar": "visible",
-    "addressEntry": "editable",
-    "historyCommands": "visible",
-    "reloadCommand": "visible",
-    "goCommand": "visible",
-    "settingsCommand": "visible",
-    "diagnosticsCommand": "visible",
-    "navigationAccelerators": {
-      "historyCommands": "browser-default",
-      "reloadCommand": "browser-default"
-    }
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": false,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
   }
 }
 ```
 
-Allowed values:
+All values are JSON booleans. The template intentionally lists every key from the first version so
+administrators can read the policy as explicit "turn this restriction on/off" switches:
 
-- `primaryToolbar`: `visible` or `hidden`
-- `addressEntry`: `editable` or `hidden`
-- `historyCommands`: `visible` or `hidden`
-- `reloadCommand`: `visible` or `hidden`
-- `goCommand`: `visible` or `hidden`
-- `settingsCommand`: `visible` or `hidden`
-- `diagnosticsCommand`: `visible` or `hidden`
-- `navigationAccelerators.historyCommands`: `browser-default` or `suppressed`
-- `navigationAccelerators.reloadCommand`: `browser-default` or `suppressed`
+| Key | `true` means | Scope |
+| --- | --- | --- |
+| `toolbar-primary-toolbar-hidden` | Hide the complete primary wrapper toolbar. | Toolbar presentation |
+| `toolbar-address-entry-hidden` | Hide the editable address entry. | Toolbar presentation |
+| `toolbar-history-command-hidden` | Hide Back and Forward wrapper commands. | Toolbar presentation |
+| `toolbar-reload-command-hidden` | Hide the Reload wrapper command. | Toolbar presentation |
+| `toolbar-go-command-hidden` | Hide the typed-address Go wrapper command. | Toolbar presentation |
+| `toolbar-settings-command-hidden` | Hide the Settings wrapper command. | Toolbar presentation |
+| `toolbar-diagnostics-command-hidden` | Hide the Diagnostics wrapper command. | Toolbar presentation |
+| `keyboard-history-command-disabled` | Suppress targeted Back and Forward keyboard/browser accelerators. | Host/browser accelerator handling |
+| `keyboard-reload-command-disabled` | Suppress targeted Reload keyboard/browser accelerators. | Host/browser accelerator handling |
 
 Rules:
 
 - Unknown root, section, or property names fail the file closed.
-- Missing optional command properties default to `visible`.
-- `primaryToolbar:hidden` hides the complete wrapper toolbar: Back, Forward, Reload, address entry,
-  Go, Settings, Diagnostics, compatibility status, and current-origin display.
+- Missing optional command properties default to `false`.
+- `toolbar-primary-toolbar-hidden:true` hides the complete wrapper toolbar: Back, Forward, Reload,
+  address entry, Go, Settings, Diagnostics, compatibility status, and current-origin display.
 - The native window title bar and close affordance remain visible and OS-owned when
-  `primaryToolbar` is hidden.
-- If `primaryToolbar` is `hidden`, individual toolbar command values are ignored and this
-  normalization should be logged.
-- If `addressEntry` is `hidden`, `goCommand` must be treated as `hidden` even if the file says
-  `visible`; this normalization should be logged as an approximation.
+  `toolbar-primary-toolbar-hidden` is true.
+- If `toolbar-primary-toolbar-hidden` is true, individual toolbar command values are ignored and
+  this normalization should be logged.
+- If `toolbar-address-entry-hidden` is true, `toolbar-go-command-hidden` must be treated as true
+  even if the file says false; this normalization should be logged as an approximation.
 - Toolbar visibility and accelerator suppression are independent. Hiding Back, Forward, or Reload
   buttons must not silently suppress browser accelerators for those commands, and suppressing an
   accelerator must not change button visibility.
-- Missing `navigationAccelerators` properties default to `browser-default`.
-- `navigationAccelerators` does not control `Ctrl+F`, `F3`, text editing, page movement keys,
-  DevTools, print, zoom, or arbitrary page-defined shortcuts.
+- Missing keyboard restriction properties default to normal browser behavior.
+- `keyboard-history-command-disabled` applies only to `Alt+Left`, `Alt+Right`, and dedicated
+  browser Back / Forward keys when the host can observe them.
+- `keyboard-reload-command-disabled` applies only to `Ctrl+R` and `F5`.
+- Keyboard restriction keys do not control `Ctrl+F`, `F3`, Backspace, text editing, page movement
+  keys, DevTools, print, zoom, or arbitrary page-defined shortcuts.
 - File size should use the existing 1 MiB configuration limit and JSON depth should remain bounded
   to 32.
 
@@ -115,10 +119,10 @@ status, and current origin are all visible.
 
 ## Full-toolbar hidden mode
 
-`primaryToolbar:hidden` is allowed because many line-of-business deployments intentionally suppress
-Back, Forward, Reload, and direct address entry so operators stay inside the application workflow.
-In this mode the in-window origin and compatibility status controls are also hidden with the toolbar.
-That is an explicit operational tradeoff, not a security guarantee.
+`toolbar-primary-toolbar-hidden:true` is allowed because many line-of-business deployments
+intentionally suppress Back, Forward, Reload, and direct address entry so operators stay inside the
+application workflow. In this mode the in-window origin and compatibility status controls are also
+hidden with the toolbar. That is an explicit operational tradeoff, not a security guarantee.
 
 Recovery from a bad full-toolbar policy is command-line based:
 
@@ -210,8 +214,8 @@ Shell policy is process-level host configuration, not origin-scoped page permiss
    reset-user-settings target selection.
 3. Apply the presentation in WPF without changing compatibility policy, startup profile selection,
    WebView2 settings, local-content loading, or modal synchronization.
-4. Implement `primaryToolbar:hidden` as a full toolbar hide, including address entry, navigation
-   commands, Settings, Diagnostics, compatibility status, and current-origin controls.
+4. Implement `toolbar-primary-toolbar-hidden:true` as a full toolbar hide, including address entry,
+   navigation commands, Settings, Diagnostics, compatibility status, and current-origin controls.
 5. Keep native close visible and verify command-line recovery before treating full-toolbar hidden
    mode as usable.
 6. Add the Issue #24 accelerator design only after pure policy tests distinguish toolbar command

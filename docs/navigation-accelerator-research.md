@@ -16,6 +16,10 @@ Keep the policy split introduced in `docs/browser-shell-policy.md`:
 - navigation accelerator suppression controls targeted Back, Forward, and Reload shortcut behavior;
 - neither surface is a kiosk, DLP, origin allow-list, or browser security feature.
 
+The version 1 JSON shape expresses that split with flat boolean keys. Toolbar controls use
+`toolbar-...-hidden` names, while accelerator controls use `keyboard-history-command-disabled` and
+`keyboard-reload-command-disabled`.
+
 The implementation design must be chosen after measuring the key path in the current WPF wrapper:
 
 1. WebView2 WPF forwarded routed key event only.

@@ -61,6 +61,10 @@ var tests = new (string Name, Action Body)[]
     ("accepts a same-origin first-child handoff", AcceptsSameOriginFirstChildHandoff),
     ("rejects unsafe and additional handoff children", RejectsUnsafeAndAdditionalHandoffChildren),
     ("requires handoff origin to remain current at close", RequiresHandoffOriginToRemainCurrentAtClose),
+    ("loads browser shell boolean policy", LoadsBrowserShellBooleanPolicy),
+    ("keeps toolbar and keyboard shell policy separate", KeepsToolbarAndKeyboardShellPolicySeparate),
+    ("falls back for invalid browser shell policy", FallsBackForInvalidBrowserShellPolicy),
+    ("exports a complete standard browser shell policy template", ExportsCompleteStandardBrowserShellPolicyTemplate),
     ("persists browser initial URL settings", PersistsBrowserInitialUrlSettings),
     ("falls back for invalid browser settings", FallsBackForInvalidBrowserSettings),
     ("rejects unsafe browser initial URLs", RejectsUnsafeBrowserInitialUrls),
@@ -1178,6 +1182,154 @@ static void RequiresHandoffOriginToRemainCurrentAtClose()
         TopLevelHandoffSelectionPolicy.CanApply(
             new Uri("https://other.example/launcher"),
             "https://legacy.example"));
+}
+
+static void LoadsBrowserShellBooleanPolicy()
+{
+    var directory = Path.Combine(Path.GetTempPath(), "ImprovisedEoslTests", Guid.NewGuid().ToString("N"));
+    var path = Path.Combine(directory, "browser-shell-policy.json");
+    Directory.CreateDirectory(directory);
+    try
+    {
+        File.WriteAllText(path, """
+            {
+              "version": 1,
+              "browserShell": {
+                "toolbar-primary-toolbar-hidden": false,
+                "toolbar-address-entry-hidden": true,
+                "toolbar-history-command-hidden": true,
+                "toolbar-reload-command-hidden": false,
+                "toolbar-go-command-hidden": true,
+                "toolbar-settings-command-hidden": false,
+                "toolbar-diagnostics-command-hidden": true,
+                "keyboard-history-command-disabled": true,
+                "keyboard-reload-command-disabled": false
+              }
+            }
+            """);
+
+        var loaded = new BrowserShellPolicyStore(path).Load();
+
+        Equal(0, loaded.Diagnostics.Count);
+        Equal(
+            new BrowserShellPolicy(
+                ToolbarPrimaryToolbarHidden: false,
+                ToolbarAddressEntryHidden: true,
+                ToolbarHistoryCommandHidden: true,
+                ToolbarReloadCommandHidden: false,
+                ToolbarGoCommandHidden: true,
+                ToolbarSettingsCommandHidden: false,
+                ToolbarDiagnosticsCommandHidden: true,
+                KeyboardHistoryCommandDisabled: true,
+                KeyboardReloadCommandDisabled: false),
+            loaded.Policy);
+    }
+    finally
+    {
+        Directory.Delete(directory, recursive: true);
+    }
+}
+
+static void KeepsToolbarAndKeyboardShellPolicySeparate()
+{
+    var directory = Path.Combine(Path.GetTempPath(), "ImprovisedEoslTests", Guid.NewGuid().ToString("N"));
+    var path = Path.Combine(directory, "browser-shell-policy.json");
+    Directory.CreateDirectory(directory);
+    try
+    {
+        File.WriteAllText(path, """
+            {
+              "version": 1,
+              "browserShell": {
+                "toolbar-history-command-hidden": true,
+                "toolbar-reload-command-hidden": true,
+                "keyboard-history-command-disabled": false,
+                "keyboard-reload-command-disabled": true
+              }
+            }
+            """);
+
+        var loaded = new BrowserShellPolicyStore(path).Load();
+
+        Equal(true, loaded.Policy.ToolbarHistoryCommandHidden);
+        Equal(true, loaded.Policy.ToolbarReloadCommandHidden);
+        Equal(false, loaded.Policy.KeyboardHistoryCommandDisabled);
+        Equal(true, loaded.Policy.KeyboardReloadCommandDisabled);
+
+        File.WriteAllText(path, """
+            {
+              "version": 1,
+              "browserShell": {
+                "keyboard-history-command-disabled": true
+              }
+            }
+            """);
+        loaded = new BrowserShellPolicyStore(path).Load();
+
+        Equal(false, loaded.Policy.ToolbarHistoryCommandHidden);
+        Equal(true, loaded.Policy.KeyboardHistoryCommandDisabled);
+    }
+    finally
+    {
+        Directory.Delete(directory, recursive: true);
+    }
+}
+
+static void FallsBackForInvalidBrowserShellPolicy()
+{
+    var directory = Path.Combine(Path.GetTempPath(), "ImprovisedEoslTests", Guid.NewGuid().ToString("N"));
+    var path = Path.Combine(directory, "browser-shell-policy.json");
+    Directory.CreateDirectory(directory);
+    try
+    {
+        var missing = new BrowserShellPolicyStore(Path.Combine(directory, "missing.json")).Load();
+        Equal(BrowserShellPolicy.Standard, missing.Policy);
+        Equal(0, missing.Diagnostics.Count);
+
+        File.WriteAllText(path, "{\"version\":2,\"browserShell\":{}}");
+        var unsupportedVersion = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, unsupportedVersion.Policy);
+        Equal(1, unsupportedVersion.Diagnostics.Count);
+
+        File.WriteAllText(path, "{\"version\":1,\"browserShell\":{\"navigationAccelerators\":{}}}");
+        var oldEnumShape = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, oldEnumShape.Policy);
+        Equal(1, oldEnumShape.Diagnostics.Count);
+
+        File.WriteAllText(path, "{\"version\":1,\"browserShell\":{\"keyboard-reload-command-disabled\":\"true\"}}");
+        var invalidBoolean = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, invalidBoolean.Policy);
+        Equal(1, invalidBoolean.Diagnostics.Count);
+
+        using (var stream = File.Create(path))
+        {
+            stream.SetLength(BrowserShellPolicyStore.MaxFileBytes + 1L);
+        }
+        var oversized = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, oversized.Policy);
+        Equal(1, oversized.Diagnostics.Count);
+    }
+    finally
+    {
+        Directory.Delete(directory, recursive: true);
+    }
+}
+
+static void ExportsCompleteStandardBrowserShellPolicyTemplate()
+{
+    var template = BrowserShellPolicyStore.CreateStandardPolicyJson();
+
+    Equal(true, template.Contains("\"version\": 1", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"browserShell\"", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-primary-toolbar-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-address-entry-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-history-command-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-reload-command-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-go-command-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-settings-command-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"toolbar-diagnostics-command-hidden\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"keyboard-history-command-disabled\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"keyboard-reload-command-disabled\": false", StringComparison.Ordinal));
 }
 
 static void PersistsBrowserInitialUrlSettings()
