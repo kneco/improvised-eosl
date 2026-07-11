@@ -65,3 +65,40 @@ find UI, or no visible change.
   direct `CoreWebView2Controller.AcceleratorKeyPressed`, WPF routed events, or unsupported.
 - `Ctrl+F` and `F3` behavior remains documented as preserved.
 - Any Backspace result is explicitly labeled measured or unsupported rather than assumed.
+
+## Manual baseline result: 2026-07-11
+
+Environment:
+
+- Fixture started from a normal user PowerShell with `--navigation-accelerator-manual`.
+- Fixture URL reached `http://127.0.0.1:18080/navigation-accelerator-reference.html#step-2`.
+- Final visible fixture state after the pasted observation showed `history.state` as `{"step":2}`,
+  reload count `3`, and event count `26`.
+
+Recorded observations:
+
+| Case | Observation |
+| --- | --- |
+| Page load and fixture state | Fixture loaded and displayed URL, history state, reload count, event count, controls, editable targets, and event log. |
+| History stack setup | `push step 1` and `push step 2` reached `#step-2` with `history.state` set to `{"step":2}`. |
+| `Alt+Left` | Tester confirmed this moved backward in the prepared history stack. |
+| `Alt+Right` | Tester confirmed this moved forward in the prepared history stack. |
+| `Ctrl+F` outside editable controls | Tester reported this as the only outside-editable key case with visible expected behavior. Find-in-page preservation remains a required constraint. |
+| `F3` | Tester confirmed F3 worked after understanding the active find-session requirement. |
+| Backspace outside editable controls | Tester reported Backspace did not trigger history-back navigation in the tested flow. |
+| Backspace in input | Multiple capture and bubble `keydown` / `keyup` entries were recorded with target `input`; text editing occurred. |
+| `Ctrl+C` and `Ctrl+V` in input | Capture and bubble entries were recorded with target `input`; tester reported editable-field shortcuts worked. |
+| `Ctrl+C` outside editable controls | Capture and bubble `keydown` entries were recorded with target `document`; no typed content was logged. |
+| `location.reload()` fixture control | Tester corrected the initial summary and confirmed the reload control worked. |
+| `F5` | Tester corrected the initial summary and confirmed F5 reload worked. A post-reload visible state included reload count `3`, and the log included `F5` `keyup` entries after `pageshow`. |
+| `Ctrl+R` | Tester confirmed Ctrl+R triggered reload. |
+| Browser Back / Forward hardware keys | Tester's keyboard has no dedicated Back / Forward hardware keys. Current scope does not require hardware-key coverage unless target deployment hardware introduces it. |
+| Editable controls overall | Tester reported that all tested editable-field cases worked. |
+
+Remaining design gate:
+
+- The normal-user baseline is sufficient to describe current Back, Forward, Reload, Find, and
+  editable-field behavior for the tested keyboard.
+- Production policy still must not be implemented until a temporary hook compares direct
+  `AcceleratorKeyPressed` behavior against the WPF routed-event path and selects
+  `IsBrowserAcceleratorKeyEnabled`, `Handled`, or unsupported behavior.
