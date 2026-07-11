@@ -98,10 +98,15 @@ public sealed class BrowserShellPolicyStore
 
     public static string CreateStandardPolicyJson()
     {
+        return CreatePolicyJson(BrowserShellPolicy.Standard);
+    }
+
+    public static string CreatePolicyJson(BrowserShellPolicy policy)
+    {
         var document = new PolicyDocument
         {
             Version = CurrentVersion,
-            BrowserShell = new BrowserShellSection()
+            BrowserShell = BrowserShellSection.FromPolicy(policy)
         };
 
         return JsonSerializer.Serialize(
@@ -111,6 +116,33 @@ public sealed class BrowserShellPolicyStore
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true
             });
+    }
+
+    public static void SavePolicy(string path, BrowserShellPolicy policy)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var directory = System.IO.Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllText(
+                temporaryPath,
+                CreatePolicyJson(policy),
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+        }
     }
 
     private (string? Json, string? Diagnostic) ReadBoundedFile()
@@ -195,5 +227,18 @@ public sealed class BrowserShellPolicyStore
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement>? Extra { get; init; }
+
+        public static BrowserShellSection FromPolicy(BrowserShellPolicy policy) => new()
+        {
+            ToolbarPrimaryToolbarHidden = policy.ToolbarPrimaryToolbarHidden,
+            ToolbarAddressEntryHidden = policy.ToolbarAddressEntryHidden,
+            ToolbarHistoryCommandHidden = policy.ToolbarHistoryCommandHidden,
+            ToolbarReloadCommandHidden = policy.ToolbarReloadCommandHidden,
+            ToolbarGoCommandHidden = policy.ToolbarGoCommandHidden,
+            ToolbarSettingsCommandHidden = policy.ToolbarSettingsCommandHidden,
+            ToolbarDiagnosticsCommandHidden = policy.ToolbarDiagnosticsCommandHidden,
+            KeyboardHistoryCommandDisabled = policy.KeyboardHistoryCommandDisabled,
+            KeyboardReloadCommandDisabled = policy.KeyboardReloadCommandDisabled
+        };
     }
 }

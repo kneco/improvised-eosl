@@ -1,8 +1,8 @@
 # Browser shell policy manual test
 
-Issue #3 should be validated from a normal user PowerShell after the JSON-only browser shell policy
-is implemented. This checklist records the intended gate; it is not evidence that the feature is
-already implemented.
+Issue #3 should be validated from a normal user PowerShell after changes to the JSON-only browser
+shell policy. This checklist records the manual gate; individual implementation PRs should also
+record their automated validation separately.
 
 ## Preconditions
 

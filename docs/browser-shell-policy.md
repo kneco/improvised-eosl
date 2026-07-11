@@ -140,13 +140,15 @@ with another policy path.
 The first implementation keeps command-line operations explicit:
 
 - `--shell-policy <path>`: load a validated shell policy from the given path for this run. This
-  source selection is implemented for the current keyboard accelerator policy.
+  source selection is implemented for the current toolbar presentation and keyboard accelerator
+  policy.
 - `--export-shell-policy <path>`: write the effective policy, or the built-in standard template
-  when no policy file exists, then exit before starting WebView2. This remains pending.
+  when no policy file exists, then exit before starting WebView2. This is implemented.
 - `--apply-shell-policy <source> --shell-policy <target>`: validate `source`, atomically replace
-  `target`, then exit before starting WebView2. This remains pending.
+  `target`, then exit before starting WebView2. This is implemented.
 - `--reset-user-settings`: delete or replace only user-managed settings, then exit before starting
-  WebView2. This remains pending.
+  WebView2. This is implemented for the user-managed initial URL and user compatibility
+  allow/deny decisions.
 
 `--reset-user-settings` must not modify:
 
