@@ -141,3 +141,37 @@ Confirm `Alt+Left`, `Alt+Right`, `Ctrl+R`, and `F5` no longer change history or 
 while `Ctrl+F`, `F3`, editable-field Backspace, and editable-field copy/paste keep their baseline
 behavior. The diagnostics should log `navigation accelerator WPF suppression` with bounded command
 categories only.
+
+## Production shell-policy suppression result: 2026-07-11
+
+Environment:
+
+- Fixture started from the WPF shell with `--navigation-accelerator-manual`.
+- Policy supplied through `--shell-policy` from a temporary JSON file.
+- Diagnostics were visible with `--show-diagnostics`.
+- WebView2 runtime reported `150.0.4078.65` on Windows `10.0.26200.0`.
+
+Policy:
+
+- `keyboard-history-command-disabled:true`
+- `keyboard-reload-command-disabled:true`
+- toolbar keys remained false, so this run measured keyboard suppression only.
+
+Recorded observations:
+
+| Case | Observation |
+| --- | --- |
+| Policy load | Diagnostics recorded `source=explicit`, the temporary policy path, `keyboardHistoryCommandDisabled=True`, and `keyboardReloadCommandDisabled=True`. |
+| `Alt+Left` | Diagnostics recorded `navigation accelerator WPF suppression: source=policy; command=history-back; key=Alt+Left; handled=true`. Tester reported the case passed. |
+| `Alt+Right` | Diagnostics recorded `navigation accelerator WPF suppression: source=policy; command=history-forward; key=Alt+Right; handled=true`. Tester reported the case passed. |
+| `Ctrl+R` | Diagnostics recorded `navigation accelerator WPF suppression: source=policy; command=reload; key=Control+R; handled=true`. Tester reported the case passed. |
+| `F5` | Diagnostics recorded `navigation accelerator WPF suppression: source=policy; command=reload; key=F5; handled=true`. Tester reported the case passed. |
+| `Ctrl+F` | Diagnostics recorded `opened WebView2 find-in-page UI`; tester reported the overall matrix passed. |
+
+Result:
+
+- The production `--shell-policy` path successfully reached WPF routed-event suppression for the
+  tested Back, Forward, and Reload accelerators.
+- `Ctrl+F` find-in-page remained available after policy suppression.
+- This evidence covers the tested keyboard path. Dedicated Browser Back / Forward hardware keys
+  remain untested on this machine because the tester's keyboard does not provide them.

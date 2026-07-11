@@ -1405,3 +1405,7 @@ Status:
   navigation shortcut classifier suppresses the targeted WPF routed key event with `Handled=true`
   and logs only bounded command categories. Toolbar visibility keys are parsed but not yet applied
   to the WPF shell.
+- Production shell-policy manual validation passed on 2026-07-11 for the tested keyboard path.
+  Diagnostics confirmed policy-loaded WPF suppression for `Alt+Left`, `Alt+Right`, `Ctrl+R`, and
+  `F5`, and confirmed `Ctrl+F` still opened WebView2 find-in-page. Dedicated Browser Back /
+  Forward hardware keys remain untested because the tester's keyboard does not provide them.
