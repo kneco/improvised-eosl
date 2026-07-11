@@ -1311,8 +1311,11 @@ Status:
   `toolbar-history-command-hidden`, `keyboard-history-command-disabled`, and
   `keyboard-reload-command-disabled`. It uses the existing 1 MiB file limit, bounded JSON depth,
   unknown-property fail-safe behavior, and a complete standard-policy template. Runtime
-  `--shell-policy <path>` source selection is implemented for the current keyboard accelerator
-  policy. WPF toolbar visibility mutation and command-line export/apply/reset modes remain pending.
+  `--shell-policy <path>` source selection is implemented. WPF toolbar visibility mutation now
+  applies the version 1 `toolbar-...-hidden` keys at startup: full primary-toolbar hidden mode
+  collapses the wrapper toolbar including compatibility status/current-origin controls, and hidden
+  address entry also hides the typed-address Go command. Command-line export/apply/reset modes
+  remain pending.
 
 ## Phase 26: targeted navigation accelerator suppression policy
 

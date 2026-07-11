@@ -148,6 +148,7 @@ public partial class MainWindow : Window
         NativeWindowVisuals.UseBrownFrame(this, AppendLog);
         AppendLog($"diagnostic panel initialized: visible={_diagnosticsVisible}; fileLogging=true");
         _browserShellPolicy = LoadBrowserShellPolicy(args);
+        ApplyBrowserShellPresentation(_browserShellPolicy);
         var applicationDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ImprovisedEosl",
@@ -279,8 +280,12 @@ public partial class MainWindow : Window
                 "loaded browser shell policy: " +
                 $"source={sourceKind}; path={sourcePath}; " +
                 $"toolbarPrimaryToolbarHidden={load.Policy.ToolbarPrimaryToolbarHidden}; " +
+                $"toolbarAddressEntryHidden={load.Policy.ToolbarAddressEntryHidden}; " +
                 $"toolbarHistoryCommandHidden={load.Policy.ToolbarHistoryCommandHidden}; " +
                 $"toolbarReloadCommandHidden={load.Policy.ToolbarReloadCommandHidden}; " +
+                $"toolbarGoCommandHidden={load.Policy.ToolbarGoCommandHidden}; " +
+                $"toolbarSettingsCommandHidden={load.Policy.ToolbarSettingsCommandHidden}; " +
+                $"toolbarDiagnosticsCommandHidden={load.Policy.ToolbarDiagnosticsCommandHidden}; " +
                 $"keyboardHistoryCommandDisabled={load.Policy.KeyboardHistoryCommandDisabled}; " +
                 $"keyboardReloadCommandDisabled={load.Policy.KeyboardReloadCommandDisabled}");
         }
@@ -299,6 +304,39 @@ public partial class MainWindow : Window
 
         return load.Policy;
     }
+
+    private void ApplyBrowserShellPresentation(BrowserShellPolicy policy)
+    {
+        var result = BrowserShellPresentationPolicy.Resolve(policy);
+        foreach (var diagnostic in result.Diagnostics)
+        {
+            AppendLog("browser shell policy presentation normalization: " + diagnostic);
+        }
+
+        var presentation = result.Presentation;
+        PrimaryToolbar.Visibility = ToVisibility(presentation.PrimaryToolbarVisible);
+        AddressBox.Visibility = ToVisibility(presentation.AddressEntryVisible);
+        BackButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
+        ForwardButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
+        ReloadButton.Visibility = ToVisibility(presentation.ReloadCommandVisible);
+        NavigateButton.Visibility = ToVisibility(presentation.GoCommandVisible);
+        ApplicationSettingsButton.Visibility = ToVisibility(presentation.SettingsCommandVisible);
+        DiagnosticsButton.Visibility = ToVisibility(presentation.DiagnosticsCommandVisible);
+        CompatibilityStatusButton.Visibility = ToVisibility(presentation.CompatibilityStatusVisible);
+        AppendLog(
+            "applied browser shell presentation: " +
+            $"primaryToolbarVisible={presentation.PrimaryToolbarVisible}; " +
+            $"addressEntryVisible={presentation.AddressEntryVisible}; " +
+            $"historyCommandVisible={presentation.HistoryCommandVisible}; " +
+            $"reloadCommandVisible={presentation.ReloadCommandVisible}; " +
+            $"goCommandVisible={presentation.GoCommandVisible}; " +
+            $"settingsCommandVisible={presentation.SettingsCommandVisible}; " +
+            $"diagnosticsCommandVisible={presentation.DiagnosticsCommandVisible}; " +
+            $"compatibilityStatusVisible={presentation.CompatibilityStatusVisible}");
+    }
+
+    private static Visibility ToVisibility(bool visible) =>
+        visible ? Visibility.Visible : Visibility.Collapsed;
 
     private void RestoreMainWindowPlacement()
     {
