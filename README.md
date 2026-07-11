@@ -185,10 +185,10 @@ dotnet run --no-build --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEos
 配布 ZIP:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.8-mvp
+powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.9-mvp
 ```
 
-生成物は `dist/ImprovisedEosl-0.1.8-mvp-win-x64.zip` です。これは単一 EXE ではなく、WebView2 native loader、HTML、設定ファイルを含む folder-based package です。詳細は [v0.1.8-mvp release note](docs/releases/v0.1.8-mvp.md) を参照してください。
+生成物は `dist/ImprovisedEosl-0.1.9-mvp-win-x64.zip` です。これは単一 EXE ではなく、WebView2 native loader、HTML、設定ファイルを含む folder-based package です。詳細は [v0.1.9-mvp release note](docs/releases/v0.1.9-mvp.md) を参照してください。
 
 ## 明示的な非目標
 
