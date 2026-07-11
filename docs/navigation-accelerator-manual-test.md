@@ -127,3 +127,17 @@ Record whether each targeted key still changes the fixture URL or reload count. 
 whether the page receives JavaScript key events. WPF suppression is expected to behave like host
 `Handled=true`, not like `IsBrowserAcceleratorKeyEnabled=false`, so page receipt may differ from a
 future direct controller-event implementation.
+
+## Production shell-policy suppression check
+
+After creating a policy with `keyboard-history-command-disabled:true` and
+`keyboard-reload-command-disabled:true`, run the same fixture through production policy loading:
+
+```powershell
+dotnet run --project src\ImprovisedEosl.Spike.SyncModal\ImprovisedEosl.Spike.SyncModal.csproj -- --navigation-accelerator-manual --shell-policy <path-to-policy> --show-diagnostics
+```
+
+Confirm `Alt+Left`, `Alt+Right`, `Ctrl+R`, and `F5` no longer change history or reload the page,
+while `Ctrl+F`, `F3`, editable-field Backspace, and editable-field copy/paste keep their baseline
+behavior. The diagnostics should log `navigation accelerator WPF suppression` with bounded command
+categories only.

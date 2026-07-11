@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     private readonly bool _navigationAcceleratorManualRun;
     private readonly bool _navigationAcceleratorWpfSuppressManualRun;
     private readonly bool _showDiagnosticsAtStartup;
+    private readonly BrowserShellPolicy _browserShellPolicy;
     private readonly CompatibilityOriginPolicy _compatibilityPolicy;
     private readonly UserApprovedOriginStore _approvalStore;
     private readonly HashSet<UserApprovedCompatibility> _userApprovedCompatibility;
@@ -146,6 +147,7 @@ public partial class MainWindow : Window
             Path.Combine(AppContext.BaseDirectory, "artifacts", "sync-modal-poc.log"));
         NativeWindowVisuals.UseBrownFrame(this, AppendLog);
         AppendLog($"diagnostic panel initialized: visible={_diagnosticsVisible}; fileLogging=true");
+        _browserShellPolicy = LoadBrowserShellPolicy(args);
         var applicationDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ImprovisedEosl",
@@ -249,6 +251,53 @@ public partial class MainWindow : Window
         StateChanged += MainWindow_StateChanged;
         Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
+    }
+
+    private BrowserShellPolicy LoadBrowserShellPolicy(IReadOnlyList<string> args)
+    {
+        var defaultPath = Path.Combine(AppContext.BaseDirectory, "config", "browser-shell-policy.json");
+        var selection = BrowserShellPolicySourceSelection.Resolve(args, defaultPath);
+        if (selection.Error is not null)
+        {
+            AppendLog(
+                "browser shell policy source warning: " +
+                $"error={selection.Error}; using=standard");
+            return BrowserShellPolicy.Standard;
+        }
+
+        var sourcePath = Path.GetFullPath(selection.Path!);
+        var sourceKind = selection.IsExplicit ? "explicit" : "default";
+        var load = new BrowserShellPolicyStore(sourcePath).Load();
+        foreach (var diagnostic in load.Diagnostics)
+        {
+            AppendLog("browser shell policy load warning: " + diagnostic);
+        }
+
+        if (load.Diagnostics.Count == 0 && File.Exists(sourcePath))
+        {
+            AppendLog(
+                "loaded browser shell policy: " +
+                $"source={sourceKind}; path={sourcePath}; " +
+                $"toolbarPrimaryToolbarHidden={load.Policy.ToolbarPrimaryToolbarHidden}; " +
+                $"toolbarHistoryCommandHidden={load.Policy.ToolbarHistoryCommandHidden}; " +
+                $"toolbarReloadCommandHidden={load.Policy.ToolbarReloadCommandHidden}; " +
+                $"keyboardHistoryCommandDisabled={load.Policy.KeyboardHistoryCommandDisabled}; " +
+                $"keyboardReloadCommandDisabled={load.Policy.KeyboardReloadCommandDisabled}");
+        }
+        else if (load.Diagnostics.Count == 0)
+        {
+            AppendLog(
+                "browser shell policy not found; using standard shell: " +
+                $"source={sourceKind}; path={sourcePath}");
+        }
+        else
+        {
+            AppendLog(
+                "browser shell policy failed safe to standard shell: " +
+                $"source={sourceKind}; path={sourcePath}");
+        }
+
+        return load.Policy;
     }
 
     private void RestoreMainWindowPlacement()
@@ -990,16 +1039,20 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (_navigationAcceleratorWpfSuppressManualRun &&
-            NavigationAcceleratorShortcutPolicy.TryGetCommand(
+        if (NavigationAcceleratorShortcutPolicy.TryGetCommand(
                 e.Key,
                 e.SystemKey,
                 Keyboard.Modifiers,
-                out var command))
+                out var command) &&
+            ShouldSuppressNavigationAccelerator(command))
         {
             e.Handled = true;
+            var source = _navigationAcceleratorWpfSuppressManualRun
+                ? "manual"
+                : "policy";
             AppendLog(
-                "navigation accelerator WPF suppression manual: " +
+                "navigation accelerator WPF suppression: " +
+                $"source={source}; " +
                 $"command={NavigationAcceleratorShortcutPolicy.FormatCommand(command)}; " +
                 $"key={FormatKeyForLog(e.Key, e.SystemKey, Keyboard.Modifiers)}; " +
                 $"repeat={e.IsRepeat}; handled=true");
@@ -1014,6 +1067,16 @@ public partial class MainWindow : Window
         e.Handled = true;
         await OpenFindInPageAsync();
     }
+
+    private bool ShouldSuppressNavigationAccelerator(NavigationAcceleratorCommand command) =>
+        _navigationAcceleratorWpfSuppressManualRun ||
+        command switch
+        {
+            NavigationAcceleratorCommand.HistoryBack or NavigationAcceleratorCommand.HistoryForward =>
+                _browserShellPolicy.KeyboardHistoryCommandDisabled,
+            NavigationAcceleratorCommand.Reload => _browserShellPolicy.KeyboardReloadCommandDisabled,
+            _ => false
+        };
 
     private static string FormatKeyForLog(Key key, Key systemKey, ModifierKeys modifiers)
     {

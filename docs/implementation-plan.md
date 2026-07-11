@@ -1310,8 +1310,9 @@ Status:
 - A pure Core `BrowserShellPolicyStore` now validates version 1 JSON with flat boolean keys such as
   `toolbar-history-command-hidden`, `keyboard-history-command-disabled`, and
   `keyboard-reload-command-disabled`. It uses the existing 1 MiB file limit, bounded JSON depth,
-  unknown-property fail-safe behavior, and a complete standard-policy template. WPF shell mutation,
-  command-line export/apply/reset modes, and runtime policy source selection remain pending.
+  unknown-property fail-safe behavior, and a complete standard-policy template. Runtime
+  `--shell-policy <path>` source selection is implemented for the current keyboard accelerator
+  policy. WPF toolbar visibility mutation and command-line export/apply/reset modes remain pending.
 
 ## Phase 26: targeted navigation accelerator suppression policy
 
@@ -1328,9 +1329,12 @@ Design decision:
 - Preserve `Ctrl+F` and `F3` find-in-page. Do not set
   `CoreWebView2Settings.AreBrowserAcceleratorKeysEnabled = false` globally because that disables
   browser accelerators beyond Back, Forward, and Reload.
-- Use `CoreWebView2Controller.AcceleratorKeyPressed` as the design point for targeted handling.
-  The implementation must decide per key whether to set `IsBrowserAcceleratorKeyEnabled = false`
-  so web content can still receive the key, or `Handled = true` so the key is stopped at the host.
+- Use WPF routed-event handling with `Handled=true` for the first production implementation because
+  the current WPF WebView2 control exposes that path clearly and it preserves `Ctrl+F`/`F3` by
+  targeting only the Back, Forward, and Reload command group. Keep
+  `CoreWebView2Controller.AcceleratorKeyPressed` as the future path if a deployment needs
+  `IsBrowserAcceleratorKeyEnabled=false` so web content can still receive a suppressed browser
+  accelerator key.
 - Treat the initial target command group as Back, Forward, and Reload only. Measure or explicitly
   reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and Backspace-driven history
   behavior before claiming coverage.
@@ -1365,8 +1369,9 @@ Implementation gate:
 4. Add a WebView2-focused manual test matrix for standard mode, toolbar-hidden-only mode,
    accelerator-suppressed-only mode, combined hidden/suppressed mode, `Ctrl+F`/`F3` preservation,
    and unsupported-key logging.
-5. Implement the host event handling only after deciding the `IsBrowserAcceleratorKeyEnabled`
-   versus `Handled` behavior for each targeted key.
+5. Implement host event handling through the WPF `Handled=true` path for the first production
+   policy connection, while documenting that direct-controller
+   `IsBrowserAcceleratorKeyEnabled=false` remains separate future work.
 6. Verify from a normal user PowerShell. Agent-launched WebView2 behavior is not authoritative
    when it conflicts with a normal user run.
 
@@ -1386,15 +1391,17 @@ Status:
   not causing history-back navigation in the tested flow, and editable-field Backspace / copy /
   paste behavior. The tester's keyboard has no dedicated browser Back / Forward hardware keys,
   and the current scope does not require hardware-key coverage unless target deployment hardware
-  introduces it. Production event-handling design still requires comparing a temporary direct
-  `AcceleratorKeyPressed` hook with the WPF routed-event path.
+  introduces it. The first production event-handling design now uses the WPF routed-event path.
 - `--navigation-accelerator-wpf-suppress-manual` now provides a temporary WPF routed-event
   suppression measurement mode for `Alt+Left`, `Alt+Right`, `Ctrl+R`, `F5`, Browser Back, and
   Browser Forward. It opens the local fixture directly and logs bounded command categories only.
-  This is not production JSON policy and should be used to decide whether WPF `Handled=true` is an
-  acceptable implementation or whether the feature remains blocked on a direct controller-event
-  surface for `IsBrowserAcceleratorKeyEnabled=false`.
+  This remains useful as an event-path measurement mode, but production JSON policy is loaded
+  through `--shell-policy <path>`.
 - The shell policy JSON layout has moved from nested enum-style
   `navigationAccelerators.historyCommands:suppressed` values to administrator-facing flat boolean
-  keys. The Core parser can now read those keys, but production WPF suppression is still not wired
-  to `--shell-policy`.
+  keys.
+- `--shell-policy <path>` now loads the Core browser-shell policy at WPF startup. When
+  `keyboard-history-command-disabled` or `keyboard-reload-command-disabled` is true, the existing
+  navigation shortcut classifier suppresses the targeted WPF routed key event with `Handled=true`
+  and logs only bounded command categories. Toolbar visibility keys are parsed but not yet applied
+  to the WPF shell.

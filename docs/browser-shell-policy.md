@@ -137,15 +137,16 @@ with another policy path.
 
 ## Command-line operations
 
-The first implementation should keep command-line operations offline and explicit:
+The first implementation keeps command-line operations explicit:
 
-- `--shell-policy <path>`: load a validated shell policy from the given path for this run.
+- `--shell-policy <path>`: load a validated shell policy from the given path for this run. This
+  source selection is implemented for the current keyboard accelerator policy.
 - `--export-shell-policy <path>`: write the effective policy, or the built-in standard template
-  when no policy file exists, then exit before starting WebView2.
+  when no policy file exists, then exit before starting WebView2. This remains pending.
 - `--apply-shell-policy <source> --shell-policy <target>`: validate `source`, atomically replace
-  `target`, then exit before starting WebView2.
+  `target`, then exit before starting WebView2. This remains pending.
 - `--reset-user-settings`: delete or replace only user-managed settings, then exit before starting
-  WebView2.
+  WebView2. This remains pending.
 
 `--reset-user-settings` must not modify:
 
@@ -172,8 +173,14 @@ The current find-in-page design deliberately keeps WebView2 browser accelerator 
 broad for Issue #24 because Microsoft documents it as disabling browser accelerators including
 Find on Page, Reload, print, zoom, DevTools, and special browser-function keys.
 
-A future implementation must use `CoreWebView2Controller.AcceleratorKeyPressed` as the design
-point for command-specific behavior. The implementation gate must distinguish these outcomes:
+The first production accelerator implementation uses the WPF `PreviewKeyDown` route and sets
+`KeyEventArgs.Handled = true` for targeted Back, Forward, and Reload commands when the matching
+`keyboard-...-disabled` policy key is true. This matches the stronger "host handled the key"
+behavior and intentionally does not promise that page JavaScript receives the suppressed key.
+
+`CoreWebView2Controller.AcceleratorKeyPressed` remains the design point for any future, more
+precise command-specific behavior. A future direct-controller implementation must distinguish
+these outcomes:
 
 - set `IsBrowserAcceleratorKeyEnabled = false` for a targeted browser accelerator only when web
   content should still receive the key event;
@@ -181,9 +188,10 @@ point for command-specific behavior. The implementation gate must distinguish th
   content for the targeted command; and
 - leave `Ctrl+F` and `F3` in the existing find-in-page path.
 
-The exact key matrix remains a validation item. At minimum, the design must measure or explicitly
-reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and any Backspace-driven history
-behavior before claiming suppression coverage. The policy must log unsupported or unrecognized
+The exact key matrix remains a validation item for each target deployment. The current
+implementation targets `Ctrl+R`, `F5`, `Alt+Left`, `Alt+Right`, and dedicated browser Back/Forward
+keys when the WPF route observes them. Backspace is excluded because the baseline did not show
+history-back navigation in the tested flow. The policy must log unsupported or unrecognized
 accelerator requests instead of implying broader enforcement. The pre-implementation evidence and
 candidate matrix are recorded in `docs/navigation-accelerator-research.md`; the baseline manual
 fixture and run checklist are recorded in `docs/navigation-accelerator-manual-test.md`.
@@ -218,9 +226,9 @@ Shell policy is process-level host configuration, not origin-scoped page permiss
    navigation commands, Settings, Diagnostics, compatibility status, and current-origin controls.
 5. Keep native close visible and verify command-line recovery before treating full-toolbar hidden
    mode as usable.
-6. Add the Issue #24 accelerator design only after pure policy tests distinguish toolbar command
-   visibility from targeted browser accelerator suppression and after the key matrix above is
-   validated.
+6. Wire the Issue #24 accelerator keys to WPF routed-event suppression after pure policy tests
+   distinguish toolbar command visibility from targeted browser accelerator suppression and after
+   the key matrix above is validated.
 7. Add a manual test that verifies restricted mode, invalid-policy fail-safe, CLI export/apply,
    reset-user-settings, ordinary browsing, compatibility consent, `Ctrl+F`, diagnostics logging,
    targeted Back/Forward/Reload accelerator behavior, and native close behavior.
