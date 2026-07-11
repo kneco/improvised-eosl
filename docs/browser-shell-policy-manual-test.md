@@ -6,7 +6,33 @@ record their automated validation separately.
 
 ## Latest result
 
-Partial command-line validation passed on 2026-07-11 from an agent-launched PowerShell:
+Partial browser shell policy validation passed on 2026-07-11.
+
+Passed from a normal user PowerShell:
+
+- Standard mode showed Back, Forward, Reload, editable address entry, Go, Settings, Diagnostics,
+  compatibility status, and current-origin display.
+- Standard mode allowed ordinary HTTP(S) navigation.
+- Standard mode preserved `Ctrl+F` WebView2 find-in-page.
+- Restricted mode with `toolbar-primary-toolbar-hidden:true` hid the complete wrapper toolbar:
+  Back, Forward, Reload, editable address entry, Go, Settings, Diagnostics, compatibility status,
+  and current-origin display.
+- Restricted mode kept the native Windows title bar and close button visible.
+- Restricted-mode diagnostics recorded the explicit policy source, loaded policy, and toolbar
+  restriction values including `toolbarPrimaryToolbarHidden=True`, `toolbarAddressEntryHidden=True`,
+  `toolbarHistoryCommandHidden=True`, `toolbarReloadCommandHidden=True`,
+  `toolbarGoCommandHidden=True`, `toolbarSettingsCommandHidden=True`, and
+  `toolbarDiagnosticsCommandHidden=True`.
+- Invalid policy with an unknown `browserShell` property failed safe to the standard visible shell.
+  The toolbar was visible, diagnostics logged the unknown property warning, and presentation was
+  applied with all shell controls visible.
+- Toolbar-hidden-only mode hid Back, Forward, and Reload buttons while keeping address entry, Go,
+  Settings, Diagnostics, and compatibility status visible.
+- Toolbar-hidden-only mode preserved `Ctrl+F` WebView2 find-in-page.
+- `--export-shell-policy <path>` exited with code 0 before WebView2 startup, did not open the app
+  UI, and wrote a standard visible-shell policy template.
+
+Passed from an agent-launched PowerShell:
 
 - `--export-shell-policy <path>` exited with code 0 before WebView2 startup and wrote a standard
   visible-shell policy template.
@@ -17,12 +43,13 @@ Partial command-line validation passed on 2026-07-11 from an agent-launched Powe
 
 Not yet passed as a full manual gate:
 
-- standard and restricted WPF shell visual checks from a normal user PowerShell;
-- fail-safe invalid-policy visual fallback and diagnostic-log review;
+- invalid-source apply target-preservation from a normal user PowerShell; the attempted check used
+  a missing `$applied` target path, so the exit-code failure was observed but target preservation
+  was not measured in that run;
 - `--reset-user-settings` runtime behavior against a disposable or explicitly approved user
   profile;
 - compatibility consent boundary checks; and
-- `Ctrl+F` / `F3` preservation in the browser UI.
+- `F3` find continuation and explicit Alt+Left/Alt+Right hidden-buttons-only navigation behavior.
 
 The agent environment did not run the WebView2 UI portions because prior evidence shows
 agent-launched WebView2 behavior is not authoritative when it differs from a normal user
