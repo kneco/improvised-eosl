@@ -1368,3 +1368,8 @@ Status:
 - Docs-only design gate added for Issue #24. `docs/navigation-accelerator-research.md` now records
   the official WebView2 constraints, current WPF source observations, key matrix, design options,
   and implementation gate. No implementation is authorized or present in this phase.
+- Baseline measurement fixture added as
+  `src/ImprovisedEosl.Spike.SyncModal/pages/navigation-accelerator-reference.html` with direct
+  manual startup through `--navigation-accelerator-manual`. The fixture does not change production
+  policy, WebView2 settings, or accelerator handling. Manual run instructions are recorded in
+  `docs/navigation-accelerator-manual-test.md`.

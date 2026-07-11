@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private readonly bool _topLevelCloseManualRun;
     private readonly bool _topLevelCloseNormalPopupAutoRun;
     private readonly bool _revokedPermissionAutoRun;
+    private readonly bool _navigationAcceleratorManualRun;
     private readonly bool _showDiagnosticsAtStartup;
     private readonly CompatibilityOriginPolicy _compatibilityPolicy;
     private readonly UserApprovedOriginStore _approvalStore;
@@ -120,6 +121,7 @@ public partial class MainWindow : Window
         _topLevelCloseManualRun = args.Any(arg => arg.Equals("--top-level-close-manual", StringComparison.OrdinalIgnoreCase));
         _topLevelCloseNormalPopupAutoRun = args.Any(arg => arg.Equals("--top-level-close-popup-auto", StringComparison.OrdinalIgnoreCase));
         _revokedPermissionAutoRun = args.Any(arg => arg.Equals("--revoked-permission-auto", StringComparison.OrdinalIgnoreCase));
+        _navigationAcceleratorManualRun = args.Any(arg => arg.Equals("--navigation-accelerator-manual", StringComparison.OrdinalIgnoreCase));
         if (_revokedPermissionAutoRun)
         {
             Environment.ExitCode = 1;
@@ -498,6 +500,8 @@ public partial class MainWindow : Window
                 ? new Uri(_testServer.BaseUri, "top-level-close-normal-popup.html")
                 : _topLevelCloseAutoRun || _topLevelCloseManualRun
                 ? new Uri(_testServer.BaseUri, "top-level-close-dummy.html")
+                : _navigationAcceleratorManualRun
+                ? new Uri(_testServer.BaseUri, "navigation-accelerator-reference.html")
                 : _windowOpenObservation || _windowOpenObservationAuto
                 ? new Uri(_testServer.BaseUri, "window-open-reference-ie.html")
                 : IsAnyAutoRun() && !_startupProfileAutoRun && !_browserSettingsAutoRun
@@ -519,6 +523,8 @@ public partial class MainWindow : Window
             }
             var startupSource = _windowOpenObservation || _windowOpenObservationAuto
                 ? "window-open-observation"
+                : _navigationAcceleratorManualRun
+                ? "navigation-accelerator-manual"
                 : startupDecision.Source switch
                 {
                     StartupNavigationSource.AutomaticValidation => "automatic-test",

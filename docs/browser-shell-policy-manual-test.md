@@ -50,7 +50,8 @@ Use a policy that hides the complete primary toolbar:
 
 Issue #24 adds a separate future gate for suppressing selected Back, Forward, and Reload
 accelerators. This checklist is not evidence that the behavior is implemented. The detailed key
-matrix and design options are tracked in `docs/navigation-accelerator-research.md`.
+matrix and design options are tracked in `docs/navigation-accelerator-research.md`. Baseline
+manual measurement before production policy work uses `docs/navigation-accelerator-manual-test.md`.
 
 Use a policy that leaves the toolbar visible but suppresses navigation accelerators:
 

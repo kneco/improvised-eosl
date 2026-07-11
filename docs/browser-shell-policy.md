@@ -181,7 +181,8 @@ The exact key matrix remains a validation item. At minimum, the design must meas
 reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and any Backspace-driven history
 behavior before claiming suppression coverage. The policy must log unsupported or unrecognized
 accelerator requests instead of implying broader enforcement. The pre-implementation evidence and
-candidate matrix are recorded in `docs/navigation-accelerator-research.md`.
+candidate matrix are recorded in `docs/navigation-accelerator-research.md`; the baseline manual
+fixture and run checklist are recorded in `docs/navigation-accelerator-manual-test.md`.
 
 Even with targeted accelerator suppression, the feature remains workflow guidance rather than a
 kiosk security boundary. It does not block page script navigation, redirects, clicked links,
