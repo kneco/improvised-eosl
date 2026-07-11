@@ -1244,9 +1244,10 @@ Design decision:
 - Keep policy validation fail-safe: invalid JSON, unsupported versions, unknown properties,
   oversized files, and impossible command combinations fall back to the standard visible shell and
   log a warning.
-- Allow `primaryToolbar:hidden` to hide the full wrapper toolbar, including Back, Forward, Reload,
-  address entry, Go, Settings, Diagnostics, compatibility status, and current-origin controls. This
-  matches line-of-business operation where browser-like escape paths are intentionally suppressed.
+- Allow `toolbar-primary-toolbar-hidden:true` to hide the full wrapper toolbar, including Back,
+  Forward, Reload, address entry, Go, Settings, Diagnostics, compatibility status, and
+  current-origin controls. This matches line-of-business operation where browser-like escape paths
+  are intentionally suppressed.
 - Treat full-toolbar hidden mode as an operational tradeoff, not a trust UI or security boundary.
   Origin and compatibility status are not visible while the toolbar is hidden; recovery is through
   command-line policy replacement or a known-good `--shell-policy` path.
@@ -1305,8 +1306,12 @@ Implementation gate:
 Status:
 
 - Research/design documented in `docs/browser-shell-policy.md` and the future manual validation
-  gate is recorded in `docs/browser-shell-policy-manual-test.md`; no implementation is authorized
-  or present in this phase.
+  gate is recorded in `docs/browser-shell-policy-manual-test.md`.
+- A pure Core `BrowserShellPolicyStore` now validates version 1 JSON with flat boolean keys such as
+  `toolbar-history-command-hidden`, `keyboard-history-command-disabled`, and
+  `keyboard-reload-command-disabled`. It uses the existing 1 MiB file limit, bounded JSON depth,
+  unknown-property fail-safe behavior, and a complete standard-policy template. WPF shell mutation,
+  command-line export/apply/reset modes, and runtime policy source selection remain pending.
 
 ## Phase 26: targeted navigation accelerator suppression policy
 
@@ -1316,8 +1321,10 @@ policy, or WebView2 security settings.
 
 Design decision:
 
-- Extend the JSON administrator shell-policy contract with a separate `navigationAccelerators`
-  section instead of overloading toolbar command visibility.
+- Extend the JSON administrator shell-policy contract with separate flat boolean keys for toolbar
+  presentation and keyboard/browser accelerator handling instead of overloading toolbar command
+  visibility. The agreed version 1 shape uses `toolbar-...-hidden` keys for wrapper chrome and
+  `keyboard-...-disabled` keys for host/browser accelerator suppression.
 - Preserve `Ctrl+F` and `F3` find-in-page. Do not set
   `CoreWebView2Settings.AreBrowserAcceleratorKeysEnabled = false` globally because that disables
   browser accelerators beyond Back, Forward, and Reload.
@@ -1352,9 +1359,9 @@ Implementation gate:
    code changes.
 2. Use `docs/navigation-accelerator-research.md` to measure the baseline key matrix before
    selecting `IsBrowserAcceleratorKeyEnabled`, `Handled`, or unsupported behavior.
-3. Add pure policy tests that distinguish `historyCommands:hidden`,
-   `reloadCommand:hidden`, `navigationAccelerators.historyCommands:suppressed`, and
-   `navigationAccelerators.reloadCommand:suppressed`.
+3. Add pure policy tests that distinguish `toolbar-history-command-hidden:true`,
+   `toolbar-reload-command-hidden:true`, `keyboard-history-command-disabled:true`, and
+   `keyboard-reload-command-disabled:true`.
 4. Add a WebView2-focused manual test matrix for standard mode, toolbar-hidden-only mode,
    accelerator-suppressed-only mode, combined hidden/suppressed mode, `Ctrl+F`/`F3` preservation,
    and unsupported-key logging.
@@ -1387,3 +1394,7 @@ Status:
   This is not production JSON policy and should be used to decide whether WPF `Handled=true` is an
   acceptable implementation or whether the feature remains blocked on a direct controller-event
   surface for `IsBrowserAcceleratorKeyEnabled=false`.
+- The shell policy JSON layout has moved from nested enum-style
+  `navigationAccelerators.historyCommands:suppressed` values to administrator-facing flat boolean
+  keys. The Core parser can now read those keys, but production WPF suppression is still not wired
+  to `--shell-policy`.

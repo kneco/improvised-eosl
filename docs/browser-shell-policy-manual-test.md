@@ -27,13 +27,15 @@ Use a policy that hides the complete primary toolbar:
 {
   "version": 1,
   "browserShell": {
-    "primaryToolbar": "hidden",
-    "addressEntry": "hidden",
-    "historyCommands": "hidden",
-    "reloadCommand": "hidden",
-    "goCommand": "hidden",
-    "settingsCommand": "hidden",
-    "diagnosticsCommand": "hidden"
+    "toolbar-primary-toolbar-hidden": true,
+    "toolbar-address-entry-hidden": true,
+    "toolbar-history-command-hidden": true,
+    "toolbar-reload-command-hidden": true,
+    "toolbar-go-command-hidden": true,
+    "toolbar-settings-command-hidden": true,
+    "toolbar-diagnostics-command-hidden": true,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
   }
 }
 ```
@@ -43,8 +45,8 @@ Use a policy that hides the complete primary toolbar:
    status, and current-origin controls are all hidden.
 3. Confirm the native Windows title bar and close button remain visible.
 4. Confirm ordinary in-page application workflow still works.
-5. Confirm the diagnostic log records the loaded policy path, `primaryToolbar:hidden`, and ignored
-   child command values.
+5. Confirm the diagnostic log records the loaded policy path, `toolbar-primary-toolbar-hidden:true`,
+   and ignored child command values.
 
 ## Future navigation accelerator suppression
 
@@ -59,13 +61,15 @@ Use a policy that leaves the toolbar visible but suppresses navigation accelerat
 {
   "version": 1,
   "browserShell": {
-    "primaryToolbar": "visible",
-    "historyCommands": "visible",
-    "reloadCommand": "visible",
-    "navigationAccelerators": {
-      "historyCommands": "suppressed",
-      "reloadCommand": "suppressed"
-    }
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": false,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": true,
+    "keyboard-reload-command-disabled": true
   }
 }
 ```
@@ -82,9 +86,10 @@ Use a policy that leaves the toolbar visible but suppresses navigation accelerat
 7. Confirm diagnostics identify the effective accelerator policy and log any unsupported key in a
    bounded way without recording typed characters or field contents.
 
-Repeat with a policy that hides Back/Forward/Reload toolbar commands but leaves
-`navigationAccelerators` at `browser-default`. Confirm hidden buttons alone do not suppress
-keyboard behavior.
+Repeat with a policy that sets `toolbar-history-command-hidden:true` and
+`toolbar-reload-command-hidden:true` but leaves `keyboard-history-command-disabled:false` and
+`keyboard-reload-command-disabled:false`. Confirm hidden buttons alone do not suppress keyboard
+behavior.
 
 ## Fail-safe policy handling
 
@@ -95,7 +100,7 @@ with a warning in the diagnostic log:
 - unsupported `version`;
 - unknown root property;
 - unknown `browserShell` property;
-- invalid `primaryToolbar` value; and
+- non-boolean restriction value; and
 - file larger than the configured maximum.
 
 ## Command-line operations
