@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private readonly bool _topLevelCloseNormalPopupAutoRun;
     private readonly bool _revokedPermissionAutoRun;
     private readonly bool _navigationAcceleratorManualRun;
+    private readonly bool _navigationAcceleratorWpfSuppressManualRun;
     private readonly bool _showDiagnosticsAtStartup;
     private readonly CompatibilityOriginPolicy _compatibilityPolicy;
     private readonly UserApprovedOriginStore _approvalStore;
@@ -122,6 +123,7 @@ public partial class MainWindow : Window
         _topLevelCloseNormalPopupAutoRun = args.Any(arg => arg.Equals("--top-level-close-popup-auto", StringComparison.OrdinalIgnoreCase));
         _revokedPermissionAutoRun = args.Any(arg => arg.Equals("--revoked-permission-auto", StringComparison.OrdinalIgnoreCase));
         _navigationAcceleratorManualRun = args.Any(arg => arg.Equals("--navigation-accelerator-manual", StringComparison.OrdinalIgnoreCase));
+        _navigationAcceleratorWpfSuppressManualRun = args.Any(arg => arg.Equals("--navigation-accelerator-wpf-suppress-manual", StringComparison.OrdinalIgnoreCase));
         if (_revokedPermissionAutoRun)
         {
             Environment.ExitCode = 1;
@@ -500,7 +502,7 @@ public partial class MainWindow : Window
                 ? new Uri(_testServer.BaseUri, "top-level-close-normal-popup.html")
                 : _topLevelCloseAutoRun || _topLevelCloseManualRun
                 ? new Uri(_testServer.BaseUri, "top-level-close-dummy.html")
-                : _navigationAcceleratorManualRun
+                : _navigationAcceleratorManualRun || _navigationAcceleratorWpfSuppressManualRun
                 ? new Uri(_testServer.BaseUri, "navigation-accelerator-reference.html")
                 : _windowOpenObservation || _windowOpenObservationAuto
                 ? new Uri(_testServer.BaseUri, "window-open-reference-ie.html")
@@ -523,6 +525,8 @@ public partial class MainWindow : Window
             }
             var startupSource = _windowOpenObservation || _windowOpenObservationAuto
                 ? "window-open-observation"
+                : _navigationAcceleratorWpfSuppressManualRun
+                ? "navigation-accelerator-wpf-suppress-manual"
                 : _navigationAcceleratorManualRun
                 ? "navigation-accelerator-manual"
                 : startupDecision.Source switch
@@ -986,6 +990,22 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (_navigationAcceleratorWpfSuppressManualRun &&
+            NavigationAcceleratorShortcutPolicy.TryGetCommand(
+                e.Key,
+                e.SystemKey,
+                Keyboard.Modifiers,
+                out var command))
+        {
+            e.Handled = true;
+            AppendLog(
+                "navigation accelerator WPF suppression manual: " +
+                $"command={NavigationAcceleratorShortcutPolicy.FormatCommand(command)}; " +
+                $"key={FormatKeyForLog(e.Key, e.SystemKey, Keyboard.Modifiers)}; " +
+                $"repeat={e.IsRepeat}; handled=true");
+            return;
+        }
+
         if (!BrowserFindShortcutPolicy.IsFindShortcut(e.Key, Keyboard.Modifiers))
         {
             return;
@@ -993,6 +1013,14 @@ public partial class MainWindow : Window
 
         e.Handled = true;
         await OpenFindInPageAsync();
+    }
+
+    private static string FormatKeyForLog(Key key, Key systemKey, ModifierKeys modifiers)
+    {
+        var effectiveKey = key == Key.System ? systemKey : key;
+        return modifiers == ModifierKeys.None
+            ? effectiveKey.ToString()
+            : $"{modifiers}+{effectiveKey}";
     }
 
     private async Task OpenFindInPageAsync()

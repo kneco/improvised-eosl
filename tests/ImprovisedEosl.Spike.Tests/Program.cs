@@ -70,6 +70,7 @@ var tests = new (string Name, Action Body)[]
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
     ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
+    ("recognizes navigation accelerator shortcuts", RecognizesNavigationAcceleratorShortcuts),
     ("converts native window colors to COLORREF", ConvertsNativeWindowColorsToColorRef),
 };
 
@@ -119,6 +120,81 @@ static void RecognizesBrowserFindShortcut()
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.None));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.F, ModifierKeys.Control | ModifierKeys.Shift));
     Equal(false, BrowserFindShortcutPolicy.IsFindShortcut(Key.G, ModifierKeys.Control));
+}
+
+static void RecognizesNavigationAcceleratorShortcuts()
+{
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.System,
+            Key.Left,
+            ModifierKeys.Alt,
+            out var altLeftCommand));
+    Equal(NavigationAcceleratorCommand.HistoryBack, altLeftCommand);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.System,
+            Key.Right,
+            ModifierKeys.Alt,
+            out var altRightCommand));
+    Equal(NavigationAcceleratorCommand.HistoryForward, altRightCommand);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.R,
+            Key.None,
+            ModifierKeys.Control,
+            out var ctrlRCommand));
+    Equal(NavigationAcceleratorCommand.Reload, ctrlRCommand);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.F5,
+            Key.None,
+            ModifierKeys.None,
+            out var f5Command));
+    Equal(NavigationAcceleratorCommand.Reload, f5Command);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.BrowserBack,
+            Key.None,
+            ModifierKeys.None,
+            out var browserBackCommand));
+    Equal(NavigationAcceleratorCommand.HistoryBack, browserBackCommand);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.BrowserForward,
+            Key.None,
+            ModifierKeys.None,
+            out var browserForwardCommand));
+    Equal(NavigationAcceleratorCommand.HistoryForward, browserForwardCommand);
+
+    Equal(
+        false,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.F,
+            Key.None,
+            ModifierKeys.Control,
+            out _));
+    Equal(
+        false,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.Back,
+            Key.None,
+            ModifierKeys.None,
+            out _));
+    Equal("history-back", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.HistoryBack));
+    Equal("history-forward", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.HistoryForward));
+    Equal("reload", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.Reload));
 }
 
 static void ConvertsNativeWindowColorsToColorRef()
