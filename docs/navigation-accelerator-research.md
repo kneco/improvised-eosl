@@ -218,3 +218,10 @@ Before implementing policy parsing or runtime suppression:
   keys, and the current scope does not require hardware-key coverage unless target deployment
   hardware introduces it. Production suppression design remains gated on comparing a temporary direct
   `AcceleratorKeyPressed` hook with the WPF routed-event path.
+- The WPF package documentation describes an internal `CoreWebView2Controller_AcceleratorKeyPressed`
+  path that forwards WebView2 accelerator input into WPF key events, but the WPF control does not
+  expose that direct controller event as the obvious application-level surface used by this spike.
+  The next measurement therefore adds `--navigation-accelerator-wpf-suppress-manual`, a temporary
+  WPF routed-event suppression mode. This can validate whether WPF `Handled=true` blocks the target
+  navigation accelerators, but it does not prove the more precise
+  `IsBrowserAcceleratorKeyEnabled=false` behavior.

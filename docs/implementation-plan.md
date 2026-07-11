@@ -1381,3 +1381,9 @@ Status:
   and the current scope does not require hardware-key coverage unless target deployment hardware
   introduces it. Production event-handling design still requires comparing a temporary direct
   `AcceleratorKeyPressed` hook with the WPF routed-event path.
+- `--navigation-accelerator-wpf-suppress-manual` now provides a temporary WPF routed-event
+  suppression measurement mode for `Alt+Left`, `Alt+Right`, `Ctrl+R`, `F5`, Browser Back, and
+  Browser Forward. It opens the local fixture directly and logs bounded command categories only.
+  This is not production JSON policy and should be used to decide whether WPF `Handled=true` is an
+  acceptable implementation or whether the feature remains blocked on a direct controller-event
+  surface for `IsBrowserAcceleratorKeyEnabled=false`.

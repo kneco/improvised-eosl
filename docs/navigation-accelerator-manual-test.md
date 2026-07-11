@@ -102,3 +102,28 @@ Remaining design gate:
 - Production policy still must not be implemented until a temporary hook compares direct
   `AcceleratorKeyPressed` behavior against the WPF routed-event path and selects
   `IsBrowserAcceleratorKeyEnabled`, `Handled`, or unsupported behavior.
+
+## WPF routed suppression measurement
+
+Use this mode to test the smallest WPF routed-event suppression path. It is a temporary manual
+measurement hook, not production policy parsing.
+
+```powershell
+dotnet run --project src\ImprovisedEosl.Spike.SyncModal\ImprovisedEosl.Spike.SyncModal.csproj -- --navigation-accelerator-wpf-suppress-manual --show-diagnostics
+```
+
+Expected measurement behavior:
+
+- The app opens `navigation-accelerator-reference.html` directly.
+- `Alt+Left`, `Alt+Right`, `Ctrl+R`, `F5`, Browser Back, and Browser Forward are handled by the
+  host through WPF `PreviewKeyDown` if the WPF WebView2 wrapper forwards those accelerators.
+- The diagnostic log records only bounded command categories: `history-back`, `history-forward`,
+  or `reload`.
+- `Ctrl+F` and `F3` must remain find-in-page behavior.
+- Backspace remains outside the suppression target because the baseline did not show
+  history-back navigation in the tested flow.
+
+Record whether each targeted key still changes the fixture URL or reload count. Also record
+whether the page receives JavaScript key events. WPF suppression is expected to behave like host
+`Handled=true`, not like `IsBrowserAcceleratorKeyEnabled=false`, so page receipt may differ from a
+future direct controller-event implementation.
