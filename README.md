@@ -2,29 +2,32 @@
 
 > 改修は間に合わない。予算もない。それでも `showModalDialog()` は残っている。
 
-古い業務Webアプリケーションの一部を、Microsoft Edge WebView2上で動かすための実験的なWindowsデスクトップブラウザーです。最初の技術MVPでは、廃止された `window.showModalDialog()` の同期動作を中心に成立性を検証しました。現在は、明示的なorigin許可の下で `window.open()` の一部のIE固有featureも限定的に補完します。
+Improvised EOSL は、古い業務 Web アプリケーションを Microsoft Edge WebView2 上で検証するための実験的な Windows デスクトップブラウザーです。
 
-これはInternet Explorerではなく、実運用を保証する製品でもありません。まずは隔離した検証環境で使用してください。
+現在の主な到達点は次の 2 つです。
 
-## まず動かす
+- 廃止された `window.showModalDialog()` の同期呼び出しを、明示的に許可した HTTP(S) origin で再現する。
+- 業務アプリの運用で問題になりやすい wrapper 側の戻る、進む、リロード、直接 URL 入力などを、管理用 JSON policy で非表示または一部キーボード抑制できるようにする。
 
-### ZIP版（いちばん簡単）
+これは Internet Explorer ではありません。Trident の再現、ActiveX、古い TLS、完全な IE DOM 互換、本番サポート、企業配布やロックダウン製品としての保証は対象外です。まずは隔離した検証環境で使ってください。
 
-[GitHub Releases](https://github.com/kneco/improvised-eosl/releases)からWindows ZIPを取得し、新しいフォルダーへZIP全体を展開します。展開先のルートにある `ImprovisedEosl.Spike.SyncModal.exe` をダブルクリックします。.NET SDKは不要です。ZIP内から直接EXEを開かないでください。隣接するDLL、`config`、`pages`なども必要です。
+## まず使う
 
-ZIP版にもMicrosoft Edge WebView2 Runtimeは必要です。通常のMicrosoft Edgeが導入されたWindows環境では、すでに利用できることがあります。
+### ZIP 版
 
-### 必要なもの
+[GitHub Releases](https://github.com/kneco/improvised-eosl/releases) から Windows ZIP を取得し、新しいフォルダーへ ZIP 全体を展開します。展開先のルートにある `ImprovisedEosl.Spike.SyncModal.exe` を起動します。
 
-- Windows 10またはWindows 11
+ZIP 版は .NET SDK 不要ですが、Microsoft Edge WebView2 Runtime は必要です。ZIP 内から直接 EXE を起動したり、EXE だけを別の場所へ移動したりしないでください。隣接する DLL、`config`、`pages` なども実行に必要です。
+
+### ソースから起動
+
+必要なもの:
+
+- Windows 10 または Windows 11
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
 
-通常のMicrosoft Edgeが導入されたWindows環境では、WebView2 Runtimeもすでに利用できることがあります。
-
-### 起動
-
-PowerShellで次を実行します。
+PowerShell で実行します。
 
 ```powershell
 git clone https://github.com/kneco/improvised-eosl.git
@@ -33,25 +36,85 @@ dotnet restore
 dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj
 ```
 
-すでにリポジトリを取得済みなら、最後の2行だけで起動できます。
+起動すると、アドレスバー付きのブラウザー画面と組み込みホームページが表示されます。一般の HTTP(S) サイトも通常の WebView2 ブラウザーとして開けます。
 
-起動すると、アドレスバーを備えたブラウザー画面とホームページが表示されます。画面下部の診断ログは通常は隠れています。
+## 何ができるか
 
-ツールバーの `設定` では、次回の通常起動時に開くHTTP(S) URLと、ユーザーが判断した互換機能の許可・拒否をまとめて管理できます。初期URLを空欄に戻すと組み込みホームを使用します。保存時に現在のページは移動しません。これらのユーザー設定はJSONへエクスポートでき、同じ画面のインポート操作または表示されたドロップ領域へのD&Dで復元できます。信頼済み互換プロファイル、Cookie、WebView2データは含まれません。
+### `showModalDialog()` 互換
 
-## 最初の動作確認
+中核機能は `window.showModalDialog()` です。許可済み origin で呼び出されたとき、親 JavaScript の呼び出しを同期的にブロックし、別 STA スレッド上の子 WebView2 ダイアログを操作可能な状態で開き、`window.returnValue` を呼び出し元へ返します。
 
-1. ホームページで `互換機能テスト` を開きます。
-2. `Open child dialog` を押します。
-3. 初回に許可確認が表示されたら `許可してリロード` を選び、もう一度 `Open child dialog` を押します。
-4. 子ダイアログの入力欄へ任意の文字を入力します。
-5. 子画面を操作できる一方、親ページの更新が止まっていることを確認します。
-6. `Return value and close` を押します。
-7. 子画面が閉じ、親ページへJSONの戻り値が同期的に表示されれば成功です。
+実装済みの範囲:
 
-`Open Google` を押すか、アドレスバーへURLを入力すると、互換機能を使わない一般サイトも閲覧できます。
+- `window.dialogArguments` と `window.returnValue`
+- Cookie と `localStorage` を含むセッション共有
+- 最大 4 階層までの入れ子ダイアログ
+- IE モードで測定したダイアログ feature 文字列の一部
+- origin 単位の明示的な互換許可と拒否
+- 診断ログと、許可済み互換設定の UI からの確認・取り消し
 
-より詳しい確認項目は[手動検証手順](docs/sync-modal-poc.md#manual-validation-steps)を参照してください。
+最初の確認は、ホームページの `互換機能テスト` から `Open child dialog` を押して行えます。初回は origin/API の許可確認が表示されるため、`許可してリロード` を選び、もう一度操作してください。詳しい手順は [Sync modal PoC](docs/sync-modal-poc.md) と [MVP readiness](docs/mvp-readiness.md) に記録しています。
+
+### `window.open()` の限定補完
+
+明示的に許可された origin では、`window.open()` の IE 固有 feature のうち、計測済みの一部を限定的に補完します。`scrollbars` と `status` は表示上の判断材料として扱います。`resizable`、`menubar`、`toolbar` は近似または host 依存です。`location`、`fullscreen`、`channelmode` は未対応です。
+
+詳細は [`window.open()` feature reference](docs/window-open-feature-reference-checklist.md) と [dialog feature compatibility](docs/dialog-feature-compatibility.md) を参照してください。
+
+### 管理用 browser shell policy
+
+管理者や検証担当者は JSON policy で wrapper のブラウザー操作面を制御できます。これは互換 API の許可ではなく、運用上の表示・操作 policy です。
+
+主な操作:
+
+```powershell
+dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --shell-policy path\to\browser-shell-policy.json
+
+dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --export-shell-policy path\to\visible-policy.json
+
+dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --apply-shell-policy path\to\source.json --shell-policy path\to\target.json
+
+dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --reset-user-settings
+```
+
+既定の policy パスは、実行ファイルから見た `config/browser-shell-policy.json` です。`--shell-policy <path>` を指定すると、その実行だけ指定ファイルを使います。
+
+Version 1 policy では、次のような boolean key を使います。
+
+```json
+{
+  "version": 1,
+  "browserShell": {
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": false,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
+  }
+}
+```
+
+実装済みの範囲:
+
+- wrapper の primary toolbar 全体の非表示
+- address entry、Back/Forward、Reload、Go、Settings、Diagnostics の個別非表示
+- `Alt+Left`、`Alt+Right`、`Ctrl+R`、`F5` の対象別抑制
+- `Ctrl+F` と `F3` の WebView2 find-in-page 維持
+- invalid policy の fail-safe standard shell
+- policy export/apply と、user-managed 設定だけを戻す reset
+
+重要な境界:
+
+- toolbar を隠しても、ページ内リンク、script navigation、redirect、form submit、アドレスバー経由の移動すべてを止めるわけではありません。
+- `keyboard-...-disabled` は対象キーを WPF routed event で `Handled=true` にする実装です。より細かい `CoreWebView2Controller.AcceleratorKeyPressed` 制御は将来検討です。
+- 専用 Browser Back/Forward hardware keys は、対象環境にそのキーがある場合の追加検証項目です。
+- これは kiosk、DLP、origin allow-list、セキュリティ製品ではありません。
+
+詳しくは [Browser shell policy](docs/browser-shell-policy.md) と [manual validation result](docs/browser-shell-policy-manual-test.md) を参照してください。
 
 ## 既存サイトで試す
 
@@ -60,27 +123,13 @@ dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.Syn
 3. `許可してリロード` を選びます。
 4. ページの再読み込み後、対象の操作をもう一度行います。
 
-許可は `スキーム + ホスト + ポート` が完全に一致するoriginと、互換APIの組み合わせにだけ適用されます。ワイルドカードは使用しません。許可・拒否はツールバーの `設定` から確認・解除できます。
+許可は `scheme + host + port` が一致する HTTP(S) origin と API の組み合わせにだけ適用されます。ワイルドカードは使いません。許可・拒否は toolbar の `設定` から確認・取り消しできます。
 
-最初の呼び出しは許可確認と再読み込みによって中断されます。サイトによっては、トップページから操作し直す必要があります。
+`file://` で直接開いたページは表示できますが、opaque origin になるため互換機能の許可対象にはなりません。`showModalDialog()` を検証する親ページと子ページは HTTP(S) で配信してください。子 URL の `data:`、`file:`、`javascript:` は安全境界として拒否します。
 
-### ローカルHTMLについて
+## 管理用 compatibility profile
 
-`file://`で直接開いたページは表示できますが、opaque originになるため互換機能の許可対象にはなりません。`showModalDialog()`を検証する親ページと子ページはHTTP(S)で配信してください。子URLの`data:`、`file:`、`javascript:`は安全境界として拒否します。
-
-中核となる互換APIは`window.showModalDialog()`です。加えて、`window.open()`のIE固有featureのうち、計測済みの`scrollbars`と`status`を明示的なorigin許可の下で補完します。dummy launcher向けの`window.close handoff`は別の互換判断であり、許可しても任意のページがアプリを終了できるわけではありません。同一originの第一子候補がある場合だけ、既存画面をそのURLへ遷移させます。`resizable`、`menubar`、`toolbar`は近似またはホスト依存、`location`、`fullscreen`、`channelmode`は未対応です。ActiveXとTridentの表示互換は対象外です。
-
-ホームの`レガシーECサンプル`は、親ページと数量入力ダイアログを同一originのHTTPページとして分離した比較デモです。初回のカート追加では互換許可とリロードが入り、その後の操作で数量が同期的にカートへ返ります。
-
-## 管理用プロファイル
-
-許可確認を出さず、指定したURLを起動時に開くには、次のファイルへプロファイルを追加します。
-
-```text
-src/ImprovisedEosl.Spike.SyncModal/config/compatibility-profiles.json
-```
-
-例:
+許可確認を出さず、指定した URL を起動時に開くには、信頼済みの管理設定として `config/compatibility-profiles.json` に profile を追加します。
 
 ```json
 {
@@ -101,77 +150,64 @@ src/ImprovisedEosl.Spike.SyncModal/config/compatibility-profiles.json
 }
 ```
 
-プロファイルIDを指定して起動します。
-
 ```powershell
 dotnet run --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --profile=legacy-order-system
 ```
 
-設定ファイルは信頼済みの管理設定として扱われます。originにパスやワイルドカードは指定できません。詳細は[互換プロファイル仕様](docs/compatibility-profiles.md)を参照してください。
+profile は browser shell policy とは別物です。profile は互換 API の origin 許可を扱い、shell policy は wrapper chrome の表示や一部 accelerator 抑制を扱います。詳細は [Configured compatibility profiles](docs/compatibility-profiles.md) を参照してください。
 
 ## 診断ログ
 
-- ツールバーの `診断ログ` で画面下部のログ表示を切り替えられます。
+- toolbar の `診断ログ` で画面下部のログ表示を切り替えられます。
 - `--show-diagnostics` を付けると、起動時からログを表示します。
 - ファイルログは実行ファイルと同じディレクトリの `artifacts/sync-modal-poc.log` に出力されます。
 
-ログにはURLパスやエラー情報などが含まれる場合があります。取り扱いは[診断ログ仕様](docs/diagnostics.md)を確認してください。
+ログには origin、URL path、エラー情報、切り詰められた payload などが含まれる場合があります。取り扱いは [Diagnostics](docs/diagnostics.md) を確認してください。
 
-## テスト
+## build と test
 
-UIに依存しないポリシーテスト:
+```powershell
+dotnet build ImprovisedEosl.sln
+```
+
+UI に依存しない policy / compatibility tests:
 
 ```powershell
 dotnet run --project tests/ImprovisedEosl.Spike.Tests/ImprovisedEosl.Spike.Tests.csproj
 ```
 
-WebView2を使う基本自動検証:
+WebView2 を使う基本自動検証:
 
 ```powershell
 dotnet run --no-build --project src/ImprovisedEosl.Spike.SyncModal/ImprovisedEosl.Spike.SyncModal.csproj -- --auto
 ```
 
-すべての自動検証モードは[同期モーダルPoC](docs/sync-modal-poc.md#automatic-validation)に記載しています。
-
-## 配布ZIPを作る
-
-自己完結型の64-bit Windows版を生成します。受け取る側に.NET SDKは不要です。
+配布 ZIP:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/publish-dist.ps1 -Version 0.1.8-mvp
 ```
 
-生成物:
+生成物は `dist/ImprovisedEosl-0.1.8-mvp-win-x64.zip` です。これは単一 EXE ではなく、WebView2 native loader、HTML、設定ファイルを含む folder-based package です。詳細は [v0.1.8-mvp release note](docs/releases/v0.1.8-mvp.md) を参照してください。
 
-```text
-dist/ImprovisedEosl-0.1.8-mvp-win-x64.zip
-```
+## 明示的な非目標
 
-これは単一EXEではなく、WebView2のネイティブローダー、HTML、設定ファイルを含むフォルダー形式です。ZIP内に余分な製品名フォルダーはなく、新しいフォルダーへ展開するとルートにEXEが現れます。隣接ファイルを移動せず、そのEXEを起動してください。
+Improvised EOSL は次を提供しません。
 
-## MVPの範囲
+- Internet Explorer や Trident の完全再現
+- ActiveX、COM automation、Browser Helper Objects、NPAPI
+- 古い TLS や暗号スイート
+- 完全な IE DOM / keyboard event 互換
+- 任意 origin の navigation allow-list
+- kiosk、DLP、lockdown、native close suppression
+- 署名、更新、enterprise deployment tooling
+- production compatibility、operational support、security guarantee
 
-実装済みの中心機能:
-
-- 同期的な `window.showModalDialog()` 呼び出し
-- 別STAスレッド上で動作する子WebView2
-- `window.dialogArguments` と `window.returnValue`
-- Cookieと `localStorage` を含むセッション共有
-- IEモードで測定したダイアログfeature文字列の一部
-- origin単位の明示的な互換許可
-
-対象外:
-
-- Internet ExplorerやTridentの完全再現
-- ActiveX、NPAPI、古いTLSや暗号スイート
-- 完全なIE DOM互換
-- 本番サポートや企業配布機能
-
-技術的な成立性、既知の制約、検証結果は[MVP readiness decision](docs/mvp-readiness.md)と[v0.1.7-mvp release notes](docs/releases/v0.1.7-mvp.md)にまとめています。
+互換機能、WebView2 制約、残リスクは [Risks and limitations](docs/risks-and-limitations.md)、[Technical feasibility](docs/technical-feasibility.md)、[Architecture](docs/architecture.md) に分けて記録しています。
 
 ## ライセンス
 
-プロジェクト独自のコードと文書は[MIT License](LICENSE)で公開しています。配布物に含まれる第三者コンポーネントには、それぞれのライセンスが適用されます。詳細は[Third-party notices](THIRD-PARTY-NOTICES.md)を確認してください。
+プロジェクト独自のコードと文書は [MIT License](LICENSE) で公開しています。配布物に含まれる第三者コンポーネントには、それぞれのライセンスが適用されます。詳細は [Third-party notices](THIRD-PARTY-NOTICES.md) を確認してください。
 
 ## 免責
 
