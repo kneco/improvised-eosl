@@ -1332,6 +1332,8 @@ Design decision:
   remain outside this phase.
 - Log unsupported or unrecognized accelerator requests instead of pretending the browser action is
   suppressed.
+- Record the detailed WebView2/WPF evidence, candidate key matrix, and implementation options in
+  `docs/navigation-accelerator-research.md`.
 
 Rejected scope:
 
@@ -1348,18 +1350,21 @@ Implementation gate:
 
 1. Keep `docs/browser-shell-policy.md` as the source of the JSON contract and update it before
    code changes.
-2. Add pure policy tests that distinguish `historyCommands:hidden`,
+2. Use `docs/navigation-accelerator-research.md` to measure the baseline key matrix before
+   selecting `IsBrowserAcceleratorKeyEnabled`, `Handled`, or unsupported behavior.
+3. Add pure policy tests that distinguish `historyCommands:hidden`,
    `reloadCommand:hidden`, `navigationAccelerators.historyCommands:suppressed`, and
    `navigationAccelerators.reloadCommand:suppressed`.
-3. Add a WebView2-focused manual test matrix for standard mode, toolbar-hidden-only mode,
+4. Add a WebView2-focused manual test matrix for standard mode, toolbar-hidden-only mode,
    accelerator-suppressed-only mode, combined hidden/suppressed mode, `Ctrl+F`/`F3` preservation,
    and unsupported-key logging.
-4. Implement the host event handling only after deciding the `IsBrowserAcceleratorKeyEnabled`
+5. Implement the host event handling only after deciding the `IsBrowserAcceleratorKeyEnabled`
    versus `Handled` behavior for each targeted key.
-5. Verify from a normal user PowerShell. Agent-launched WebView2 behavior is not authoritative
+6. Verify from a normal user PowerShell. Agent-launched WebView2 behavior is not authoritative
    when it conflicts with a normal user run.
 
 Status:
 
-- Docs-only design gate added for Issue #24. No implementation is authorized or present in this
-  phase.
+- Docs-only design gate added for Issue #24. `docs/navigation-accelerator-research.md` now records
+  the official WebView2 constraints, current WPF source observations, key matrix, design options,
+  and implementation gate. No implementation is authorized or present in this phase.
