@@ -29,8 +29,17 @@ Passed from a normal user PowerShell:
 - Toolbar-hidden-only mode hid Back, Forward, and Reload buttons while keeping address entry, Go,
   Settings, Diagnostics, and compatibility status visible.
 - Toolbar-hidden-only mode preserved `Ctrl+F` WebView2 find-in-page.
+- `F3` advanced to the next WebView2 find result and was not intercepted by wrapper policy or
+  toolbar handling.
+- Toolbar-hidden-only mode preserved `Alt+Left` and `Alt+Right` history navigation when
+  `keyboard-history-command-disabled:false`; diagnostics did not log
+  `navigation accelerator WPF suppression`.
 - `--export-shell-policy <path>` exited with code 0 before WebView2 startup, did not open the app
   UI, and wrote a standard visible-shell policy template.
+- Valid `--apply-shell-policy <source> --shell-policy <target>` exited with code 0 and created the
+  target policy file.
+- Repeating apply with an invalid source exited with code 1 and preserved the existing target file
+  byte-for-byte.
 
 Passed from an agent-launched PowerShell:
 
@@ -43,13 +52,9 @@ Passed from an agent-launched PowerShell:
 
 Not yet passed as a full manual gate:
 
-- invalid-source apply target-preservation from a normal user PowerShell; the attempted check used
-  a missing `$applied` target path, so the exit-code failure was observed but target preservation
-  was not measured in that run;
 - `--reset-user-settings` runtime behavior against a disposable or explicitly approved user
   profile;
-- compatibility consent boundary checks; and
-- `F3` find continuation and explicit Alt+Left/Alt+Right hidden-buttons-only navigation behavior.
+- compatibility consent boundary checks.
 
 The agent environment did not run the WebView2 UI portions because prior evidence shows
 agent-launched WebView2 behavior is not authoritative when it differs from a normal user
