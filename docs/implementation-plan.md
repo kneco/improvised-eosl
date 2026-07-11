@@ -1256,8 +1256,8 @@ Design decision:
   local-content loading, diagnostics logging, WebView2 storage, and modal synchronization separate
   from shell presentation.
 - Do not disable WebView2 security, Chromium sandboxing, or browser accelerator keys as part of
-  this first shell-policy phase. Navigation accelerator suppression, if needed, requires a separate
-  design because `Ctrl+F` intentionally relies on WebView2 find/browser accelerator behavior.
+  this first shell-policy phase. Navigation accelerator suppression is tracked separately in
+  Phase 26 because `Ctrl+F` intentionally relies on WebView2 find/browser accelerator behavior.
 - Support offline command-line operations only: `--export-shell-policy <path>`,
   `--apply-shell-policy <source> --shell-policy <target>`, and `--reset-user-settings`. These
   commands should exit before WebView2 starts and must not elevate permissions or bypass operating
@@ -1281,6 +1281,9 @@ Known constraints:
 
 - Hiding wrapper navigation controls does not stop page script navigation, redirects, clicked links,
   or all WebView2/browser accelerators.
+- Toolbar command visibility and host/browser accelerator suppression are separate policy layers.
+  Hiding Back, Forward, or Reload does not imply keyboard suppression, and keyboard suppression
+  must not silently change the visible shell.
 - The existing top-level close handoff path can hide the full toolbar as a legacy chrome
   approximation. The administrator shell policy may produce the same presentation, but must remain
   a separate process-level policy rather than a `window.open` compatibility side effect.
@@ -1304,3 +1307,59 @@ Status:
 - Research/design documented in `docs/browser-shell-policy.md` and the future manual validation
   gate is recorded in `docs/browser-shell-policy-manual-test.md`; no implementation is authorized
   or present in this phase.
+
+## Phase 26: targeted navigation accelerator suppression policy
+
+Goal: design Issue #24 as a docs-only gate for administrator suppression of Back, Forward, and
+Reload host/browser accelerators without changing compatibility permission, origin navigation
+policy, or WebView2 security settings.
+
+Design decision:
+
+- Extend the JSON administrator shell-policy contract with a separate `navigationAccelerators`
+  section instead of overloading toolbar command visibility.
+- Preserve `Ctrl+F` and `F3` find-in-page. Do not set
+  `CoreWebView2Settings.AreBrowserAcceleratorKeysEnabled = false` globally because that disables
+  browser accelerators beyond Back, Forward, and Reload.
+- Use `CoreWebView2Controller.AcceleratorKeyPressed` as the design point for targeted handling.
+  The implementation must decide per key whether to set `IsBrowserAcceleratorKeyEnabled = false`
+  so web content can still receive the key, or `Handled = true` so the key is stopped at the host.
+- Treat the initial target command group as Back, Forward, and Reload only. Measure or explicitly
+  reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and Backspace-driven history
+  behavior before claiming coverage.
+- Keep this as workflow guidance, not kiosk/security enforcement. Page script navigation,
+  redirects, clicked links, `location` assignment, form submission, and origin allow-list control
+  remain outside this phase.
+- Log unsupported or unrecognized accelerator requests instead of pretending the browser action is
+  suppressed.
+
+Rejected scope:
+
+- disabling WebView2 security, site isolation, Chromium sandboxing, or all browser accelerators;
+- suppressing `Ctrl+F`/`F3` find-in-page, text editing, page movement, print, zoom, DevTools, or
+  arbitrary page-defined shortcuts;
+- keylogging, per-keystroke diagnostics, page keyboard-event mutation, or IE DOM keyboard
+  emulation;
+- origin allow-list navigation control, kiosk lockdown, DLP, enterprise deployment guarantees, or
+  native close suppression; and
+- implementing Issue #24 before the key matrix and WebView2 event semantics are validated.
+
+Implementation gate:
+
+1. Keep `docs/browser-shell-policy.md` as the source of the JSON contract and update it before
+   code changes.
+2. Add pure policy tests that distinguish `historyCommands:hidden`,
+   `reloadCommand:hidden`, `navigationAccelerators.historyCommands:suppressed`, and
+   `navigationAccelerators.reloadCommand:suppressed`.
+3. Add a WebView2-focused manual test matrix for standard mode, toolbar-hidden-only mode,
+   accelerator-suppressed-only mode, combined hidden/suppressed mode, `Ctrl+F`/`F3` preservation,
+   and unsupported-key logging.
+4. Implement the host event handling only after deciding the `IsBrowserAcceleratorKeyEnabled`
+   versus `Handled` behavior for each targeted key.
+5. Verify from a normal user PowerShell. Agent-launched WebView2 behavior is not authoritative
+   when it conflicts with a normal user run.
+
+Status:
+
+- Docs-only design gate added for Issue #24. No implementation is authorized or present in this
+  phase.

@@ -46,6 +46,44 @@ Use a policy that hides the complete primary toolbar:
 5. Confirm the diagnostic log records the loaded policy path, `primaryToolbar:hidden`, and ignored
    child command values.
 
+## Future navigation accelerator suppression
+
+Issue #24 adds a separate future gate for suppressing selected Back, Forward, and Reload
+accelerators. This checklist is not evidence that the behavior is implemented.
+
+Use a policy that leaves the toolbar visible but suppresses navigation accelerators:
+
+```json
+{
+  "version": 1,
+  "browserShell": {
+    "primaryToolbar": "visible",
+    "historyCommands": "visible",
+    "reloadCommand": "visible",
+    "navigationAccelerators": {
+      "historyCommands": "suppressed",
+      "reloadCommand": "suppressed"
+    }
+  }
+}
+```
+
+1. Start with `--shell-policy <path-to-policy>`.
+2. Confirm Back, Forward, and Reload toolbar buttons remain visible and operate according to their
+   visible enabled/disabled state.
+3. Confirm targeted browser accelerators for Back, Forward, and Reload are suppressed according to
+   the documented key matrix.
+4. Confirm `Ctrl+F` opens WebView2 find-in-page and `F3` continues the find session.
+5. Confirm ordinary text editing shortcuts and page movement keys retain normal browser behavior.
+6. Confirm clicked links, script navigation, redirects, form submission, and typed address
+   navigation are not represented as blocked by this policy.
+7. Confirm diagnostics identify the effective accelerator policy and log any unsupported key in a
+   bounded way without recording typed characters or field contents.
+
+Repeat with a policy that hides Back/Forward/Reload toolbar commands but leaves
+`navigationAccelerators` at `browser-default`. Confirm hidden buttons alone do not suppress
+keyboard behavior.
+
 ## Fail-safe policy handling
 
 For each case, start with `--shell-policy <path>` and confirm the standard visible shell is used
@@ -90,3 +128,7 @@ The feature must not:
 - hide native close;
 - expose policy mutation to web content; or
 - claim kiosk or enterprise lockdown enforcement.
+
+The future Issue #24 accelerator policy must additionally preserve `Ctrl+F`/`F3` find-in-page and
+must not claim to block page script navigation, redirects, clicked links, form submission, typed
+address navigation, or origin changes.

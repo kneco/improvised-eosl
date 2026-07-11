@@ -3,8 +3,10 @@
 ## Purpose
 
 Issue #3 is an administrator/operations feature for hiding selected wrapper browser controls such
-as the editable address entry and navigation commands. It is not a compatibility API and must not
-grant, deny, or emulate Internet Explorer behavior.
+as the editable address entry and navigation commands. Issue #24 extends the same administrator
+policy surface with a separate design question: whether selected host/browser accelerators for
+Back, Forward, and Reload can be suppressed without disabling unrelated browser features. Neither
+surface is a compatibility API, and neither may grant, deny, or emulate Internet Explorer behavior.
 
 The policy is JSON-only. General users should not receive a Settings UI for this surface. If an
 organization wants the mode to be enforced, the deployed policy file must be owned and protected by
@@ -12,13 +14,14 @@ operating-system permissions.
 
 ## Boundaries
 
-This policy may control only host shell presentation:
+This policy may control only two administrator-owned host surfaces:
 
 - primary wrapper toolbar visibility;
 - wrapper address entry visibility when the toolbar is visible;
 - wrapper back, forward, reload, and typed-address navigation command visibility when the toolbar
-  is visible; and
-- wrapper Settings and Diagnostics command visibility when the toolbar is visible.
+  is visible;
+- wrapper Settings and Diagnostics command visibility when the toolbar is visible; and
+- future host/browser accelerator handling for the same Back, Forward, and Reload command group.
 
 This policy must not:
 
@@ -27,9 +30,9 @@ This policy must not:
   `window.close` handoff;
 - modify configured compatibility profiles or user-approved compatibility decisions;
 - rewrite page script or inject a new host object;
-- intercept arbitrary native commands;
+- intercept arbitrary native commands or page keyboard input;
 - claim kiosk, lockdown, or data-loss-prevention behavior;
-- prevent all WebView2/browser accelerator behavior; or
+- prevent all WebView2/browser accelerator behavior, including find-in-page; or
 - hide the native window close affordance.
 
 The existing `window.open` and top-level close handoff feature handling may approximate legacy
@@ -63,7 +66,11 @@ the policy file during normal browsing.
     "reloadCommand": "visible",
     "goCommand": "visible",
     "settingsCommand": "visible",
-    "diagnosticsCommand": "visible"
+    "diagnosticsCommand": "visible",
+    "navigationAccelerators": {
+      "historyCommands": "browser-default",
+      "reloadCommand": "browser-default"
+    }
   }
 }
 ```
@@ -77,6 +84,8 @@ Allowed values:
 - `goCommand`: `visible` or `hidden`
 - `settingsCommand`: `visible` or `hidden`
 - `diagnosticsCommand`: `visible` or `hidden`
+- `navigationAccelerators.historyCommands`: `browser-default` or `suppressed`
+- `navigationAccelerators.reloadCommand`: `browser-default` or `suppressed`
 
 Rules:
 
@@ -90,6 +99,12 @@ Rules:
   normalization should be logged.
 - If `addressEntry` is `hidden`, `goCommand` must be treated as `hidden` even if the file says
   `visible`; this normalization should be logged as an approximation.
+- Toolbar visibility and accelerator suppression are independent. Hiding Back, Forward, or Reload
+  buttons must not silently suppress browser accelerators for those commands, and suppressing an
+  accelerator must not change button visibility.
+- Missing `navigationAccelerators` properties default to `browser-default`.
+- `navigationAccelerators` does not control `Ctrl+F`, `F3`, text editing, page movement keys,
+  DevTools, print, zoom, or arbitrary page-defined shortcuts.
 - File size should use the existing 1 MiB configuration limit and JSON depth should remain bounded
   to 32.
 
@@ -149,10 +164,27 @@ still navigate itself, links can be clicked, redirects can occur, and WebView2/b
 behavior may remain active.
 
 The current find-in-page design deliberately keeps WebView2 browser accelerator keys enabled for
-`Ctrl+F` and `F3`. Disabling browser accelerators globally to suppress Back, Forward, Reload, or F1
-would conflict with that behavior and requires a separate design gate. A later enforcement phase may
-evaluate a narrow accelerator policy, but version 1 of the shell policy should be described as
-wrapper-shell presentation and workflow guidance, not a kiosk security boundary.
+`Ctrl+F` and `F3`. `CoreWebView2Settings.AreBrowserAcceleratorKeysEnabled = false` is therefore too
+broad for Issue #24 because Microsoft documents it as disabling browser accelerators including
+Find on Page, Reload, print, zoom, DevTools, and special browser-function keys.
+
+A future implementation must use `CoreWebView2Controller.AcceleratorKeyPressed` as the design
+point for command-specific behavior. The implementation gate must distinguish these outcomes:
+
+- set `IsBrowserAcceleratorKeyEnabled = false` for a targeted browser accelerator only when web
+  content should still receive the key event;
+- set `Handled = true` only when the host must stop both browser handling and propagation to web
+  content for the targeted command; and
+- leave `Ctrl+F` and `F3` in the existing find-in-page path.
+
+The exact key matrix remains a validation item. At minimum, the design must measure or explicitly
+reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and any Backspace-driven history
+behavior before claiming suppression coverage. The policy must log unsupported or unrecognized
+accelerator requests instead of implying broader enforcement.
+
+Even with targeted accelerator suppression, the feature remains workflow guidance rather than a
+kiosk security boundary. It does not block page script navigation, redirects, clicked links,
+location assignment, form submission, or origin changes.
 
 Navigation policy remains separate. If an organization needs to restrict reachable origins, that is
 a future allow-list/navigation-control feature with its own security review.
@@ -180,6 +212,9 @@ Shell policy is process-level host configuration, not origin-scoped page permiss
    commands, Settings, Diagnostics, compatibility status, and current-origin controls.
 5. Keep native close visible and verify command-line recovery before treating full-toolbar hidden
    mode as usable.
-6. Add a manual test that verifies restricted mode, invalid-policy fail-safe, CLI export/apply,
+6. Add the Issue #24 accelerator design only after pure policy tests distinguish toolbar command
+   visibility from targeted browser accelerator suppression and after the key matrix above is
+   validated.
+7. Add a manual test that verifies restricted mode, invalid-policy fail-safe, CLI export/apply,
    reset-user-settings, ordinary browsing, compatibility consent, `Ctrl+F`, diagnostics logging,
-   and native close behavior.
+   targeted Back/Forward/Reload accelerator behavior, and native close behavior.
