@@ -63,6 +63,7 @@ var tests = new (string Name, Action Body)[]
     ("requires handoff origin to remain current at close", RequiresHandoffOriginToRemainCurrentAtClose),
     ("loads browser shell boolean policy", LoadsBrowserShellBooleanPolicy),
     ("keeps toolbar and keyboard shell policy separate", KeepsToolbarAndKeyboardShellPolicySeparate),
+    ("maps browser shell policy to toolbar presentation", MapsBrowserShellPolicyToToolbarPresentation),
     ("falls back for invalid browser shell policy", FallsBackForInvalidBrowserShellPolicy),
     ("exports a complete standard browser shell policy template", ExportsCompleteStandardBrowserShellPolicyTemplate),
     ("resolves browser shell policy sources", ResolvesBrowserShellPolicySources),
@@ -1274,6 +1275,58 @@ static void KeepsToolbarAndKeyboardShellPolicySeparate()
     {
         Directory.Delete(directory, recursive: true);
     }
+}
+
+static void MapsBrowserShellPolicyToToolbarPresentation()
+{
+    var standard = BrowserShellPresentationPolicy.Resolve(BrowserShellPolicy.Standard);
+    Equal(0, standard.Diagnostics.Count);
+    Equal(
+        new BrowserShellPresentation(
+            PrimaryToolbarVisible: true,
+            AddressEntryVisible: true,
+            HistoryCommandVisible: true,
+            ReloadCommandVisible: true,
+            GoCommandVisible: true,
+            SettingsCommandVisible: true,
+            DiagnosticsCommandVisible: true,
+            CompatibilityStatusVisible: true),
+        standard.Presentation);
+
+    var addressHidden = BrowserShellPresentationPolicy.Resolve(
+        BrowserShellPolicy.Standard with
+        {
+            ToolbarAddressEntryHidden = true,
+            ToolbarGoCommandHidden = false
+        });
+    Equal(1, addressHidden.Diagnostics.Count);
+    Equal(true, addressHidden.Presentation.PrimaryToolbarVisible);
+    Equal(false, addressHidden.Presentation.AddressEntryVisible);
+    Equal(false, addressHidden.Presentation.GoCommandVisible);
+    Equal(true, addressHidden.Presentation.HistoryCommandVisible);
+
+    var restricted = BrowserShellPresentationPolicy.Resolve(
+        BrowserShellPolicy.Standard with
+        {
+            ToolbarPrimaryToolbarHidden = true,
+            ToolbarAddressEntryHidden = false,
+            ToolbarHistoryCommandHidden = false,
+            ToolbarReloadCommandHidden = false,
+            ToolbarSettingsCommandHidden = false,
+            ToolbarDiagnosticsCommandHidden = false
+        });
+    Equal(1, restricted.Diagnostics.Count);
+    Equal(
+        new BrowserShellPresentation(
+            PrimaryToolbarVisible: false,
+            AddressEntryVisible: false,
+            HistoryCommandVisible: false,
+            ReloadCommandVisible: false,
+            GoCommandVisible: false,
+            SettingsCommandVisible: false,
+            DiagnosticsCommandVisible: false,
+            CompatibilityStatusVisible: false),
+        restricted.Presentation);
 }
 
 static void FallsBackForInvalidBrowserShellPolicy()

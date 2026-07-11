@@ -16,7 +16,7 @@
             <RowDefinition x:Name="DiagnosticsRow" Height="0" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="8">
+        <Grid x:Name="PrimaryToolbar" Grid.Row="0" Margin="8">
             <Grid.RowDefinitions>
                 <RowDefinition x:Name="BrowserCommandRow" Height="Auto" />
             </Grid.RowDefinitions>
@@ -59,7 +59,8 @@
                       StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       Data="{StaticResource ForwardIconGeometry}" />
             </Button>
-            <Button Grid.Row="0"
+            <Button x:Name="ReloadButton"
+                    Grid.Row="0"
                     Grid.Column="2"
                     Margin="0,0,4,0"
                     Style="{StaticResource BrowserCommandButtonStyle}"
@@ -99,7 +100,8 @@
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </Button>
-            <Button Grid.Row="0"
+            <Button x:Name="NavigateButton"
+                    Grid.Row="0"
                     Grid.Column="4"
                     Margin="0,0,4,0"
                     Style="{StaticResource BrowserCommandButtonStyle}"
