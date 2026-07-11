@@ -180,7 +180,8 @@ point for command-specific behavior. The implementation gate must distinguish th
 The exact key matrix remains a validation item. At minimum, the design must measure or explicitly
 reject Ctrl+R, F5, Alt+Left, Alt+Right, browser Back/Forward keys, and any Backspace-driven history
 behavior before claiming suppression coverage. The policy must log unsupported or unrecognized
-accelerator requests instead of implying broader enforcement.
+accelerator requests instead of implying broader enforcement. The pre-implementation evidence and
+candidate matrix are recorded in `docs/navigation-accelerator-research.md`.
 
 Even with targeted accelerator suppression, the feature remains workflow guidance rather than a
 kiosk security boundary. It does not block page script navigation, redirects, clicked links,
