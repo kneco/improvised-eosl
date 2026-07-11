@@ -4,6 +4,32 @@ Issue #3 should be validated from a normal user PowerShell after changes to the 
 shell policy. This checklist records the manual gate; individual implementation PRs should also
 record their automated validation separately.
 
+## Latest result
+
+Partial command-line validation passed on 2026-07-11 from an agent-launched PowerShell:
+
+- `--export-shell-policy <path>` exited with code 0 before WebView2 startup and wrote a standard
+  visible-shell policy template.
+- `--apply-shell-policy <source> --shell-policy <target>` exited with code 0 before WebView2
+  startup and atomically replaced the target with a valid restricted policy.
+- Repeating apply with an invalid source exited with code 1 and left the previous target file
+  unchanged.
+
+Not yet passed as a full manual gate:
+
+- standard and restricted WPF shell visual checks from a normal user PowerShell;
+- fail-safe invalid-policy visual fallback and diagnostic-log review;
+- `--reset-user-settings` runtime behavior against a disposable or explicitly approved user
+  profile;
+- compatibility consent boundary checks; and
+- `Ctrl+F` / `F3` preservation in the browser UI.
+
+The agent environment did not run the WebView2 UI portions because prior evidence shows
+agent-launched WebView2 behavior is not authoritative when it differs from a normal user
+PowerShell. The agent also did not run `--reset-user-settings` because the implementation targets
+the real `%LOCALAPPDATA%\ImprovisedEosl\SyncModalSpike` folder and should not be invoked without an
+explicit disposable-profile setup or user approval.
+
 ## Preconditions
 
 - Use a build that includes the browser shell policy implementation.
