@@ -115,6 +115,13 @@ Minimum cases:
 | `Ctrl+C` / `Ctrl+V` | Editing | Copy/paste | Copy/paste | Must remain outside navigation policy. |
 | Page Up / Page Down | Movement | Page movement | Page movement | Must remain outside navigation policy. |
 
+The built-in fixture for this baseline is
+`src/ImprovisedEosl.Spike.SyncModal/pages/navigation-accelerator-reference.html`. It can be opened
+from the built-in home page or directly with `--navigation-accelerator-manual`. The page does not
+install any suppression hook. It records only bounded event categories and visible browser effects
+so the next prototype can compare WebView2/browser behavior against WPF routed-event behavior
+without relying on production policy code.
+
 ## Design options to test
 
 ### Option A: Direct browser-accelerator control
@@ -187,7 +194,7 @@ This feature must not:
 
 Before implementing policy parsing or runtime suppression:
 
-1. Create a manual measurement fixture for the key matrix above.
+1. Use the manual measurement fixture for the key matrix above.
 2. Record current standard behavior in a normal user PowerShell.
 3. Prototype the smallest possible event hook behind a temporary measurement flag, not policy.
 4. Compare direct-event and WPF-routed behavior where available.
@@ -195,3 +202,10 @@ Before implementing policy parsing or runtime suppression:
    or remain unsupported.
 6. Update `docs/browser-shell-policy.md`, `docs/browser-shell-policy-manual-test.md`, and
    `docs/implementation-plan.md` with the measured decision before adding production policy code.
+
+## Fixture status
+
+- `navigation-accelerator-reference.html` exists as a baseline-only local fixture.
+- `--navigation-accelerator-manual` starts the application directly at that fixture without
+  changing production browser shell policy, WebView2 security settings, or accelerator handling.
+- No direct `AcceleratorKeyPressed` hook and no WPF suppression hook are present yet.

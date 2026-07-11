@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>navigation accelerator reference fixture</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, "Yu Gothic UI", sans-serif;
+      background: Canvas;
+      color: CanvasText;
+    }
+
+    body {
+      margin: 2rem;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 920px;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      margin: 0 0.35rem 0.5rem 0;
+      padding: 0.45rem 0.75rem;
+    }
+
+    input,
+    textarea {
+      box-sizing: border-box;
+      width: min(100%, 36rem);
+      margin: 0.25rem 0 0.75rem;
+      padding: 0.45rem;
+    }
+
+    textarea {
+      min-height: 4.5rem;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 0.2rem 0.75rem;
+    }
+
+    dt {
+      font-weight: 650;
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      max-height: 22rem;
+      padding: 0.75rem;
+      overflow: auto;
+      border: 1px solid ButtonBorder;
+      background: color-mix(in srgb, CanvasText 8%, Canvas);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>navigation accelerator reference fixture</h1>
+    <p>
+      This local fixture records baseline keyboard, history, and reload behavior. It does not
+      suppress any accelerator keys.
+    </p>
+
+    <section aria-labelledby="state-heading">
+      <h2 id="state-heading">state</h2>
+      <dl>
+        <dt>URL</dt>
+        <dd id="url"></dd>
+        <dt>history.state</dt>
+        <dd id="history-state"></dd>
+        <dt>reload count</dt>
+        <dd id="reload-count"></dd>
+        <dt>event count</dt>
+        <dd id="event-count"></dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="history-heading">
+      <h2 id="history-heading">history controls</h2>
+      <button id="push-one" type="button">push step 1</button>
+      <button id="push-two" type="button">push step 2</button>
+      <button id="back" type="button">history.back()</button>
+      <button id="forward" type="button">history.forward()</button>
+      <button id="reload" type="button">location.reload()</button>
+    </section>
+
+    <section aria-labelledby="editing-heading">
+      <h2 id="editing-heading">editing targets</h2>
+      <label for="sample-input">input target</label>
+      <input id="sample-input" value="Backspace should edit this value">
+      <label for="sample-textarea">textarea target</label>
+      <textarea id="sample-textarea">Backspace, Ctrl+C, and Ctrl+V should remain editing behavior here.</textarea>
+    </section>
+
+    <section aria-labelledby="log-heading">
+      <h2 id="log-heading">event log</h2>
+      <button id="clear-log" type="button">clear log</button>
+      <pre id="log" aria-live="polite"></pre>
+    </section>
+  </main>
+
+  <script>
+    const reloadKey = "improvisedEosl.navigationAccelerator.reloadCount";
+    const logElement = document.getElementById("log");
+    const eventCountElement = document.getElementById("event-count");
+    let eventCount = 0;
+
+    function reloadCount() {
+      const next = Number.parseInt(sessionStorage.getItem(reloadKey) || "0", 10) + 1;
+      sessionStorage.setItem(reloadKey, String(next));
+      return next;
+    }
+
+    function targetKind(target) {
+      if (target instanceof HTMLInputElement) {
+        return "input";
+      }
+      if (target instanceof HTMLTextAreaElement) {
+        return "textarea";
+      }
+      if (target instanceof HTMLButtonElement) {
+        return "button";
+      }
+      return "document";
+    }
+
+    function phaseName(phase) {
+      if (phase === Event.CAPTURING_PHASE) {
+        return "capture";
+      }
+      if (phase === Event.AT_TARGET) {
+        return "target";
+      }
+      if (phase === Event.BUBBLING_PHASE) {
+        return "bubble";
+      }
+      return "none";
+    }
+
+    function keyCategory(event) {
+      const key = String(event.key || "").toLowerCase();
+      const code = String(event.code || "").toLowerCase();
+      if (event.altKey && key === "arrowleft") {
+        return "Alt+Left";
+      }
+      if (event.altKey && key === "arrowright") {
+        return "Alt+Right";
+      }
+      if (event.ctrlKey && key === "r") {
+        return "Ctrl+R";
+      }
+      if (event.ctrlKey && key === "f") {
+        return "Ctrl+F";
+      }
+      if (event.ctrlKey && key === "c") {
+        return "Ctrl+C";
+      }
+      if (event.ctrlKey && key === "v") {
+        return "Ctrl+V";
+      }
+      if (key === "f3" || key === "f5") {
+        return event.key;
+      }
+      if (key === "backspace") {
+        return "Backspace";
+      }
+      if (key === "pageup" || key === "pagedown") {
+        return event.key;
+      }
+      if (key === "browserback" || code === "browserback") {
+        return "BrowserBack";
+      }
+      if (key === "browserforward" || code === "browserforward") {
+        return "BrowserForward";
+      }
+      return null;
+    }
+
+    function updateState() {
+      document.getElementById("url").textContent = window.location.href;
+      document.getElementById("history-state").textContent = JSON.stringify(history.state);
+      document.getElementById("reload-count").textContent = sessionStorage.getItem(reloadKey) || "0";
+      eventCountElement.textContent = String(eventCount);
+    }
+
+    function appendLog(message) {
+      const now = new Date().toISOString();
+      logElement.textContent = `${now} ${message}\n${logElement.textContent}`;
+      updateState();
+    }
+
+    function pushStep(step) {
+      history.pushState({ step }, "", `#step-${step}`);
+      appendLog(`pushState step=${step}`);
+    }
+
+    function onKey(event) {
+      const category = keyCategory(event);
+      if (!category) {
+        return;
+      }
+
+      eventCount += 1;
+      appendLog(
+        [
+          `type=${event.type}`,
+          `phase=${phaseName(event.eventPhase)}`,
+          `keyCategory=${category}`,
+          `alt=${event.altKey}`,
+          `ctrl=${event.ctrlKey}`,
+          `shift=${event.shiftKey}`,
+          `meta=${event.metaKey}`,
+          `target=${targetKind(event.target)}`,
+          `defaultPrevented=${event.defaultPrevented}`
+        ].join("; "));
+    }
+
+    document.getElementById("push-one").addEventListener("click", () => pushStep(1));
+    document.getElementById("push-two").addEventListener("click", () => pushStep(2));
+    document.getElementById("back").addEventListener("click", () => history.back());
+    document.getElementById("forward").addEventListener("click", () => history.forward());
+    document.getElementById("reload").addEventListener("click", () => location.reload());
+    document.getElementById("clear-log").addEventListener("click", () => {
+      logElement.textContent = "";
+      eventCount = 0;
+      updateState();
+    });
+
+    window.addEventListener("pageshow", event => {
+      appendLog(`pageshow persisted=${event.persisted}`);
+    });
+    window.addEventListener("popstate", event => {
+      appendLog(`popstate state=${JSON.stringify(event.state)}`);
+    });
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("keydown", onKey, false);
+    document.addEventListener("keyup", onKey, true);
+    document.addEventListener("keyup", onKey, false);
+
+    reloadCount();
+    updateState();
+  </script>
+</body>
+</html>
