@@ -48,12 +48,12 @@ Use a policy that hides the complete primary toolbar:
 5. Confirm the diagnostic log records the loaded policy path, `toolbar-primary-toolbar-hidden:true`,
    and ignored child command values.
 
-## Future navigation accelerator suppression
+## Navigation accelerator suppression
 
-Issue #24 adds a separate future gate for suppressing selected Back, Forward, and Reload
-accelerators. This checklist is not evidence that the behavior is implemented. The detailed key
-matrix and design options are tracked in `docs/navigation-accelerator-research.md`. Baseline
-manual measurement before production policy work uses `docs/navigation-accelerator-manual-test.md`.
+Issue #24 adds a separate gate for suppressing selected Back, Forward, and Reload accelerators.
+The detailed key matrix and design options are tracked in
+`docs/navigation-accelerator-research.md`. Baseline manual measurement before production policy
+work uses `docs/navigation-accelerator-manual-test.md`.
 
 Use a policy that leaves the toolbar visible but suppresses navigation accelerators:
 
@@ -90,6 +90,17 @@ Repeat with a policy that sets `toolbar-history-command-hidden:true` and
 `toolbar-reload-command-hidden:true` but leaves `keyboard-history-command-disabled:false` and
 `keyboard-reload-command-disabled:false`. Confirm hidden buttons alone do not suppress keyboard
 behavior.
+
+For fixture-based validation, start the navigation accelerator page directly with the same policy:
+
+```powershell
+dotnet run --project src\ImprovisedEosl.Spike.SyncModal\ImprovisedEosl.Spike.SyncModal.csproj -- --navigation-accelerator-manual --shell-policy <path-to-policy> --show-diagnostics
+```
+
+The current production path uses WPF routed-event handling and logs
+`navigation accelerator WPF suppression` when it sets `Handled=true` for a targeted policy command.
+This does not claim the more precise WebView2 direct-controller
+`IsBrowserAcceleratorKeyEnabled=false` behavior.
 
 ## Fail-safe policy handling
 

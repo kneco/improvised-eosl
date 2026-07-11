@@ -65,6 +65,7 @@ var tests = new (string Name, Action Body)[]
     ("keeps toolbar and keyboard shell policy separate", KeepsToolbarAndKeyboardShellPolicySeparate),
     ("falls back for invalid browser shell policy", FallsBackForInvalidBrowserShellPolicy),
     ("exports a complete standard browser shell policy template", ExportsCompleteStandardBrowserShellPolicyTemplate),
+    ("resolves browser shell policy sources", ResolvesBrowserShellPolicySources),
     ("persists browser initial URL settings", PersistsBrowserInitialUrlSettings),
     ("falls back for invalid browser settings", FallsBackForInvalidBrowserSettings),
     ("rejects unsafe browser initial URLs", RejectsUnsafeBrowserInitialUrls),
@@ -1330,6 +1331,41 @@ static void ExportsCompleteStandardBrowserShellPolicyTemplate()
     Equal(true, template.Contains("\"toolbar-diagnostics-command-hidden\": false", StringComparison.Ordinal));
     Equal(true, template.Contains("\"keyboard-history-command-disabled\": false", StringComparison.Ordinal));
     Equal(true, template.Contains("\"keyboard-reload-command-disabled\": false", StringComparison.Ordinal));
+}
+
+static void ResolvesBrowserShellPolicySources()
+{
+    const string defaultPath = @"C:\app\config\browser-shell-policy.json";
+
+    var unspecified = BrowserShellPolicySourceSelection.Resolve(["app.exe"], defaultPath);
+    Equal(defaultPath, unspecified.Path);
+    Equal(false, unspecified.IsExplicit);
+    Equal<BrowserShellPolicySourceSelectionError?>(null, unspecified.Error);
+
+    var separated = BrowserShellPolicySourceSelection.Resolve(
+        ["app.exe", "--shell-policy", @"D:\ops\policy.json"],
+        defaultPath);
+    Equal(@"D:\ops\policy.json", separated.Path);
+    Equal(true, separated.IsExplicit);
+    Equal<BrowserShellPolicySourceSelectionError?>(null, separated.Error);
+
+    var equals = BrowserShellPolicySourceSelection.Resolve(
+        ["app.exe", "--shell-policy=relative-policy.json"],
+        defaultPath);
+    Equal("relative-policy.json", equals.Path);
+    Equal(true, equals.IsExplicit);
+
+    var missing = BrowserShellPolicySourceSelection.Resolve(["app.exe", "--shell-policy"], defaultPath);
+    Equal<BrowserShellPolicySourceSelectionError?>(
+        BrowserShellPolicySourceSelectionError.MissingPath,
+        missing.Error);
+
+    var multiple = BrowserShellPolicySourceSelection.Resolve(
+        ["app.exe", "--shell-policy=a.json", "--shell-policy", "b.json"],
+        defaultPath);
+    Equal<BrowserShellPolicySourceSelectionError?>(
+        BrowserShellPolicySourceSelectionError.MultipleSelections,
+        multiple.Error);
 }
 
 static void PersistsBrowserInitialUrlSettings()

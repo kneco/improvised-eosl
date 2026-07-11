@@ -1,8 +1,8 @@
 # Navigation accelerator suppression research
 
 Issue #24 asks whether administrator JSON policy can suppress Back, Forward, and Reload operations
-from both wrapper buttons and browser shortcuts. This document records the pre-implementation
-research gate. It does not authorize code changes yet.
+from both wrapper buttons and browser shortcuts. This document records the research gate, measured
+baseline, and selected first implementation path.
 
 ## Decision
 
@@ -20,12 +20,11 @@ The version 1 JSON shape expresses that split with flat boolean keys. Toolbar co
 `toolbar-...-hidden` names, while accelerator controls use `keyboard-history-command-disabled` and
 `keyboard-reload-command-disabled`.
 
-The implementation design must be chosen after measuring the key path in the current WPF wrapper:
-
-1. WebView2 WPF forwarded routed key event only.
-2. Direct `CoreWebView2Controller.AcceleratorKeyPressed` handling if accessible and necessary.
-3. No implementation if the required distinction cannot be made without suppressing unrelated
-   browser behavior.
+The first production implementation uses the measured WebView2 WPF forwarded routed key path and
+sets WPF `Handled=true` for targeted policy commands. Direct
+`CoreWebView2Controller.AcceleratorKeyPressed` handling remains the future path if a deployment
+needs the narrower `IsBrowserAcceleratorKeyEnabled=false` behavior where page JavaScript can still
+receive the key.
 
 ## Source evidence
 
@@ -194,9 +193,9 @@ This feature must not:
 - mutate page keyboard events or emulate IE DOM keyboard behavior; or
 - become a keylogger or native hotkey bridge.
 
-## Implementation gate
+## Completed implementation gate
 
-Before implementing policy parsing or runtime suppression:
+The first policy parsing and WPF routed-event suppression pass followed this gate:
 
 1. Use the manual measurement fixture for the key matrix above.
 2. Record current standard behavior in a normal user PowerShell.
@@ -211,8 +210,9 @@ Before implementing policy parsing or runtime suppression:
 
 - `navigation-accelerator-reference.html` exists as a baseline-only local fixture.
 - `--navigation-accelerator-manual` starts the application directly at that fixture without
-  changing production browser shell policy, WebView2 security settings, or accelerator handling.
-- No direct `AcceleratorKeyPressed` hook and no WPF suppression hook are present yet.
+  changing WebView2 security settings. It can be combined with `--shell-policy <path>` to validate
+  production accelerator suppression against the same fixture.
+- No direct `AcceleratorKeyPressed` hook is present.
 - A first normal-user baseline was recorded on 2026-07-11 in
   `docs/navigation-accelerator-manual-test.md`. It confirms the fixture loads, the history stack
   can be prepared, `Alt+Left` and `Alt+Right` move through the prepared history stack, `Ctrl+R`
@@ -220,12 +220,15 @@ Before implementing policy parsing or runtime suppression:
   not trigger history-back navigation in the tested flow, and editable-field Backspace / copy /
   paste behavior works. The tester's keyboard has no dedicated browser Back / Forward hardware
   keys, and the current scope does not require hardware-key coverage unless target deployment
-  hardware introduces it. Production suppression design remains gated on comparing a temporary direct
-  `AcceleratorKeyPressed` hook with the WPF routed-event path.
+  hardware introduces it.
 - The WPF package documentation describes an internal `CoreWebView2Controller_AcceleratorKeyPressed`
   path that forwards WebView2 accelerator input into WPF key events, but the WPF control does not
   expose that direct controller event as the obvious application-level surface used by this spike.
-  The next measurement therefore adds `--navigation-accelerator-wpf-suppress-manual`, a temporary
-  WPF routed-event suppression mode. This can validate whether WPF `Handled=true` blocks the target
-  navigation accelerators, but it does not prove the more precise
+  The project therefore uses WPF routed-event suppression for the first policy implementation.
+  `--navigation-accelerator-wpf-suppress-manual` remains as a manual measurement mode for the same
+  event path. This validates WPF `Handled=true`; it does not prove the more precise
   `IsBrowserAcceleratorKeyEnabled=false` behavior.
+- `--shell-policy <path>` can now load flat boolean keys from the administrator shell policy and
+  suppress `Alt+Left`, `Alt+Right`, `Ctrl+R`, `F5`, and observable Browser Back / Forward keys when
+  `keyboard-history-command-disabled` or `keyboard-reload-command-disabled` is true. `Ctrl+F`,
+  `F3`, Backspace, and editing shortcuts remain outside the policy target.
