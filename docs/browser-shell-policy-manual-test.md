@@ -6,7 +6,7 @@ record their automated validation separately.
 
 ## Latest result
 
-Partial browser shell policy validation passed on 2026-07-11.
+Browser shell policy manual validation passed on 2026-07-11.
 
 Passed from a normal user PowerShell:
 
@@ -40,6 +40,14 @@ Passed from a normal user PowerShell:
   target policy file.
 - Repeating apply with an invalid source exited with code 1 and preserved the existing target file
   byte-for-byte.
+- Compatibility consent boundary checks passed: shell visibility did not grant or deny
+  compatibility, and modal behavior remained governed by origin/API permission.
+- `--reset-user-settings` exited with code 0. It reset browser settings to
+  `{"Version":1,"InitialUrl":null}` and user compatibility decisions to empty `Approvals` and
+  `Denials`.
+- After `--reset-user-settings`, the WebView2 user data folder still existed, the configured
+  compatibility profile file still existed, and no `config/browser-shell-policy.json` file was
+  created.
 
 Passed from an agent-launched PowerShell:
 
@@ -50,17 +58,9 @@ Passed from an agent-launched PowerShell:
 - Repeating apply with an invalid source exited with code 1 and left the previous target file
   unchanged.
 
-Not yet passed as a full manual gate:
-
-- `--reset-user-settings` runtime behavior against a disposable or explicitly approved user
-  profile;
-- compatibility consent boundary checks.
-
 The agent environment did not run the WebView2 UI portions because prior evidence shows
 agent-launched WebView2 behavior is not authoritative when it differs from a normal user
-PowerShell. The agent also did not run `--reset-user-settings` because the implementation targets
-the real `%LOCALAPPDATA%\ImprovisedEosl\SyncModalSpike` folder and should not be invoked without an
-explicit disposable-profile setup or user approval.
+PowerShell. Those UI portions were completed from a normal user PowerShell.
 
 ## Preconditions
 
