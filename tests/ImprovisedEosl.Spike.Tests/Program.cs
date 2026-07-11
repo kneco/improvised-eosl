@@ -66,7 +66,9 @@ var tests = new (string Name, Action Body)[]
     ("maps browser shell policy to toolbar presentation", MapsBrowserShellPolicyToToolbarPresentation),
     ("falls back for invalid browser shell policy", FallsBackForInvalidBrowserShellPolicy),
     ("exports a complete standard browser shell policy template", ExportsCompleteStandardBrowserShellPolicyTemplate),
+    ("saves browser shell policy files atomically", SavesBrowserShellPolicyFilesAtomically),
     ("resolves browser shell policy sources", ResolvesBrowserShellPolicySources),
+    ("resolves browser shell policy command-line operations", ResolvesBrowserShellPolicyCommandLineOperations),
     ("persists browser initial URL settings", PersistsBrowserInitialUrlSettings),
     ("falls back for invalid browser settings", FallsBackForInvalidBrowserSettings),
     ("rejects unsafe browser initial URLs", RejectsUnsafeBrowserInitialUrls),
@@ -1386,6 +1388,34 @@ static void ExportsCompleteStandardBrowserShellPolicyTemplate()
     Equal(true, template.Contains("\"keyboard-reload-command-disabled\": false", StringComparison.Ordinal));
 }
 
+static void SavesBrowserShellPolicyFilesAtomically()
+{
+    var directory = Path.Combine(Path.GetTempPath(), "ImprovisedEoslTests", Guid.NewGuid().ToString("N"));
+    var path = Path.Combine(directory, "browser-shell-policy.json");
+    try
+    {
+        var policy = BrowserShellPolicy.Standard with
+        {
+            ToolbarPrimaryToolbarHidden = true,
+            KeyboardReloadCommandDisabled = true
+        };
+
+        BrowserShellPolicyStore.SavePolicy(path, policy);
+
+        var loaded = new BrowserShellPolicyStore(path).Load();
+        Equal(0, loaded.Diagnostics.Count);
+        Equal(policy, loaded.Policy);
+        Equal(0, Directory.EnumerateFiles(directory, "*.tmp").Count());
+    }
+    finally
+    {
+        if (Directory.Exists(directory))
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+}
+
 static void ResolvesBrowserShellPolicySources()
 {
     const string defaultPath = @"C:\app\config\browser-shell-policy.json";
@@ -1419,6 +1449,65 @@ static void ResolvesBrowserShellPolicySources()
     Equal<BrowserShellPolicySourceSelectionError?>(
         BrowserShellPolicySourceSelectionError.MultipleSelections,
         multiple.Error);
+}
+
+static void ResolvesBrowserShellPolicyCommandLineOperations()
+{
+    const string defaultPath = @"C:\app\config\browser-shell-policy.json";
+
+    var normal = BrowserShellPolicyCommandLine.Resolve(["app.exe"], defaultPath);
+    Equal(BrowserShellPolicyCommandLineMode.RunBrowser, normal.Mode);
+    Equal<BrowserShellPolicyCommandLineError?>(null, normal.Error);
+
+    var exportSeparated = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--export-shell-policy", @"D:\ops\visible.json"],
+        defaultPath);
+    Equal(BrowserShellPolicyCommandLineMode.ExportShellPolicy, exportSeparated.Mode);
+    Equal(@"D:\ops\visible.json", exportSeparated.ExportPath);
+
+    var exportEquals = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--export-shell-policy=visible.json"],
+        defaultPath);
+    Equal(BrowserShellPolicyCommandLineMode.ExportShellPolicy, exportEquals.Mode);
+    Equal("visible.json", exportEquals.ExportPath);
+
+    var apply = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--apply-shell-policy", "source.json", "--shell-policy", "target.json"],
+        defaultPath);
+    Equal(BrowserShellPolicyCommandLineMode.ApplyShellPolicy, apply.Mode);
+    Equal("source.json", apply.ApplySourcePath);
+    Equal("target.json", apply.ApplyTargetPath);
+
+    var reset = BrowserShellPolicyCommandLine.Resolve(["app.exe", "--reset-user-settings"], defaultPath);
+    Equal(BrowserShellPolicyCommandLineMode.ResetUserSettings, reset.Mode);
+
+    var missingExport = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--export-shell-policy"],
+        defaultPath);
+    Equal<BrowserShellPolicyCommandLineError?>(
+        BrowserShellPolicyCommandLineError.MissingExportPath,
+        missingExport.Error);
+
+    var missingApplyTarget = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--apply-shell-policy=source.json"],
+        defaultPath);
+    Equal<BrowserShellPolicyCommandLineError?>(
+        BrowserShellPolicyCommandLineError.MissingApplyTargetPath,
+        missingApplyTarget.Error);
+
+    var invalidApplyTarget = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--apply-shell-policy=source.json", "--shell-policy=a.json", "--shell-policy=b.json"],
+        defaultPath);
+    Equal<BrowserShellPolicyCommandLineError?>(
+        BrowserShellPolicyCommandLineError.InvalidApplyTargetPath,
+        invalidApplyTarget.Error);
+
+    var multipleOperations = BrowserShellPolicyCommandLine.Resolve(
+        ["app.exe", "--export-shell-policy=visible.json", "--reset-user-settings"],
+        defaultPath);
+    Equal<BrowserShellPolicyCommandLineError?>(
+        BrowserShellPolicyCommandLineError.MultipleOperations,
+        multipleOperations.Error);
 }
 
 static void PersistsBrowserInitialUrlSettings()

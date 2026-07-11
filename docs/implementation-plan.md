@@ -1314,8 +1314,12 @@ Status:
   `--shell-policy <path>` source selection is implemented. WPF toolbar visibility mutation now
   applies the version 1 `toolbar-...-hidden` keys at startup: full primary-toolbar hidden mode
   collapses the wrapper toolbar including compatibility status/current-origin controls, and hidden
-  address entry also hides the typed-address Go command. Command-line export/apply/reset modes
-  remain pending.
+  address entry also hides the typed-address Go command. Command-line export/apply/reset modes now
+  run from WPF application startup before `MainWindow` or WebView2 is created:
+  `--export-shell-policy <path>` writes the effective policy, `--apply-shell-policy <source>
+  --shell-policy <target>` validates and atomically replaces the target, and
+  `--reset-user-settings` resets only the user-managed initial URL and user compatibility
+  allow/deny decisions.
 
 ## Phase 26: targeted navigation accelerator suppression policy
 
