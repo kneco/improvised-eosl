@@ -209,3 +209,12 @@ Before implementing policy parsing or runtime suppression:
 - `--navigation-accelerator-manual` starts the application directly at that fixture without
   changing production browser shell policy, WebView2 security settings, or accelerator handling.
 - No direct `AcceleratorKeyPressed` hook and no WPF suppression hook are present yet.
+- A first normal-user baseline was recorded on 2026-07-11 in
+  `docs/navigation-accelerator-manual-test.md`. It confirms the fixture loads, the history stack
+  can be prepared, `Alt+Left` and `Alt+Right` move through the prepared history stack, `Ctrl+R`
+  and F5 reload, `Ctrl+F` and `F3` find behavior works, Backspace outside editable controls does
+  not trigger history-back navigation in the tested flow, and editable-field Backspace / copy /
+  paste behavior works. The tester's keyboard has no dedicated browser Back / Forward hardware
+  keys, and the current scope does not require hardware-key coverage unless target deployment
+  hardware introduces it. Production suppression design remains gated on comparing a temporary direct
+  `AcceleratorKeyPressed` hook with the WPF routed-event path.

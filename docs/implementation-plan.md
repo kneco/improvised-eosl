@@ -1373,3 +1373,11 @@ Status:
   manual startup through `--navigation-accelerator-manual`. The fixture does not change production
   policy, WebView2 settings, or accelerator handling. Manual run instructions are recorded in
   `docs/navigation-accelerator-manual-test.md`.
+- First normal-user baseline notes were recorded on 2026-07-11. They confirm the fixture path,
+  history-stack preparation, `Alt+Left` / `Alt+Right` history movement, fixture reload control,
+  F5 reload, Ctrl+R reload, `Ctrl+F` / `F3` find preservation, Backspace outside editable controls
+  not causing history-back navigation in the tested flow, and editable-field Backspace / copy /
+  paste behavior. The tester's keyboard has no dedicated browser Back / Forward hardware keys,
+  and the current scope does not require hardware-key coverage unless target deployment hardware
+  introduces it. Production event-handling design still requires comparing a temporary direct
+  `AcceleratorKeyPressed` hook with the WPF routed-event path.
