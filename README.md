@@ -101,7 +101,8 @@ Version 1 policy では、次のような boolean key を使います。
 実装済みの範囲:
 
 - wrapper の primary toolbar 全体の非表示
-- address entry、Back/Forward、Reload、Go、Settings、Diagnostics の個別非表示
+- address entry、Back/Forward、Reload、Settings、Diagnostics の個別非表示
+- `toolbar-go-command-hidden` は version 1 policy 互換のため受け入れられますが、現在の shell では typed address navigation は address entry で Enter を押して実行します
 - `Alt+Left`、`Alt+Right`、`Ctrl+R`、`F5` の対象別抑制
 - `Ctrl+F` と `F3` の WebView2 find-in-page 維持
 - invalid policy の fail-safe standard shell

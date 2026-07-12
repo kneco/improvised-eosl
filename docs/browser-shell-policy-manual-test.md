@@ -49,6 +49,11 @@ Passed from a normal user PowerShell:
   compatibility profile file still existed, and no `config/browser-shell-policy.json` file was
   created.
 
+Issue #43 later removed the standalone Go button. Repeat visible-toolbar checks against the
+current shell by confirming typed-address navigation through Enter in the address entry. The
+version 1 `toolbar-go-command-hidden` policy key remains accepted only for existing policy-file
+compatibility.
+
 Passed from an agent-launched PowerShell:
 
 - `--export-shell-policy <path>` exited with code 0 before WebView2 startup and wrote a standard
@@ -72,9 +77,9 @@ PowerShell. Those UI portions were completed from a normal user PowerShell.
 ## Standard mode
 
 1. Start without `config/browser-shell-policy.json` and without `--shell-policy`.
-2. Confirm Back, Forward, Reload, editable address entry, Go, Settings, Diagnostics,
+2. Confirm Back, Forward, Reload, editable address entry, Settings, Diagnostics,
    compatibility status, and current origin are visible.
-3. Confirm ordinary HTTP(S) navigation works.
+3. Confirm ordinary HTTP(S) navigation works by typing an address and pressing Enter.
 4. Confirm `Ctrl+F` still opens WebView2 find-in-page.
 
 ## Restricted mode
@@ -99,7 +104,7 @@ Use a policy that hides the complete primary toolbar:
 ```
 
 1. Start with `--shell-policy <path-to-policy>`.
-2. Confirm Back/Forward/Reload, editable address entry, Go, Settings, Diagnostics, compatibility
+2. Confirm Back/Forward/Reload, editable address entry, Settings, Diagnostics, compatibility
    status, and current-origin controls are all hidden.
 3. Confirm the native Windows title bar and close button remain visible.
 4. Confirm ordinary in-page application workflow still works.

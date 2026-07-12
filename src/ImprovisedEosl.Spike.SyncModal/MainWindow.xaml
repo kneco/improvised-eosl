@@ -28,7 +28,6 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Button x:Name="BackButton"
@@ -81,7 +80,7 @@
                      KeyDown="AddressBox_KeyDown" />
             <Button x:Name="CompatibilityStatusButton"
                     Grid.Row="0"
-                    Grid.Column="5"
+                    Grid.Column="4"
                     Margin="0,0,4,0"
                     Padding="8,5"
                     MaxWidth="170"
@@ -100,23 +99,9 @@
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </Button>
-            <Button x:Name="NavigateButton"
-                    Grid.Row="0"
-                    Grid.Column="4"
-                    Margin="0,0,4,0"
-                    Style="{StaticResource BrowserCommandButtonStyle}"
-                    ToolTip="Go"
-                    AutomationProperties.Name="Go"
-                    Click="Navigate_Click"
-                    >
-                <Path Width="20" Height="20" Stretch="Uniform"
-                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                      Data="{StaticResource NavigateIconGeometry}" />
-            </Button>
             <Button x:Name="ApplicationSettingsButton"
                     Grid.Row="0"
-                    Grid.Column="6"
+                    Grid.Column="5"
                     Margin="0,0,4,0"
                     Style="{StaticResource LabeledCommandButtonStyle}"
                     Click="ApplicationSettings_Click">
@@ -130,7 +115,7 @@
             </Button>
             <Button x:Name="DiagnosticsButton"
                     Grid.Row="0"
-                    Grid.Column="7"
+                    Grid.Column="6"
                     Style="{StaticResource LabeledCommandButtonStyle}"
                     Click="Diagnostics_Click">
                 <StackPanel Orientation="Horizontal">

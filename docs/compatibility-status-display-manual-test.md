@@ -11,10 +11,10 @@ Passed in a normal user session on 2026-07-07:
 - status update after revocation; and
 - status update after an origin change.
 
-The review identified one layout correction: the status control between the address field and Go
-split one navigation operation into two visual groups. The corrected order is address field, Go,
-compatibility status, Settings, and Diagnostics. The corrected Release build was restarted and
-the new order passed visual confirmation in the normal user session on 2026-07-07.
+The review identified one layout correction before Issue #43: the status control between the
+address field and Go split one navigation operation into two visual groups. Issue #43 later removed
+the standalone Go button; the current order is address field, compatibility status, Settings, and
+Diagnostics, with typed-address navigation performed by pressing Enter in the address field.
 
 Passed through Windows UI Automation on 2026-07-07 at the current desktop scale:
 
@@ -47,7 +47,8 @@ WebView2 security or sandbox settings for this check.
 
 1. Confirm that the compatibility indicator is on the same row as the address field and that the
    former full-width status row no longer consumes browser height.
-2. Confirm that the address field and Go remain adjacent, followed by the compatibility indicator.
+2. Confirm that typed-address navigation works from the address field with Enter and that the
+   compatibility indicator follows the address field without splitting navigation controls.
 3. Resize the main window until the address field reaches its minimum practical width. Confirm the
    short status label and command buttons do not overlap the editable URL.
 4. Tab to the status indicator. Confirm that focus is visible and Enter or Space opens a detail
