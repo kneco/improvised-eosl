@@ -6,6 +6,15 @@ synchronization.
 
 ## Latest partial result
 
+Normal-user visual validation on 2026-07-12 found the remaining taskbar, Alt+Tab, and display-scale
+checks acceptable. Windows contrast theme `Desert` initially exposed unreadable wrapper-toolbar text
+because the WPF wrapper command palette continued to use product brown brushes instead of
+contrast-theme system brushes.
+
+The follow-up fix switches wrapper command button foreground, border, hover, and disabled brushes to
+`SystemColors` while `SystemParameters.HighContrast` is true. A normal-user Desert contrast-theme
+re-check passed on 2026-07-12.
+
 Passed in the current user session on 2026-07-10:
 
 - title-bar icon displayed the brown Improvised EOSL mark instead of the former blue `IE` wordmark;
@@ -33,7 +42,9 @@ Validation environment:
 - primary display: `1920x1080`
 - observed WPF window DPI: `96` (`100%`)
 - Windows app theme: dark
-- high contrast skip behavior, taskbar, Alt+Tab, and 150%/200% display-scale checks remain pending.
+- taskbar, Alt+Tab, and 150%/200% display-scale checks were later reported acceptable on
+  2026-07-12.
+- Windows contrast theme `Desert` readability passed after the high-contrast command-style fix.
 
 Run this checklist from a normal user PowerShell. Agent-launched WebView2 processes are not a
 reliable UI validation environment on every machine.

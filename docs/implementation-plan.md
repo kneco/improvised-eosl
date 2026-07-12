@@ -1228,8 +1228,12 @@ Status:
 - Native frame tinting is applied through `DwmSetWindowAttribute` for supported Windows 11
   environments and is skipped for high contrast or unsupported DWM attributes. This keeps standard
   OS window behavior instead of implementing custom chrome.
-- Manual title-bar, taskbar, Alt+Tab, Windows theme, high-contrast, and 100%/150%/200% display-scale
-  checks remain to be run from a normal user session using `docs/visual-redesign-manual-test.md`.
+- Manual taskbar, Alt+Tab, and display-scale checks were reported acceptable in a normal user
+  session on 2026-07-12. Windows contrast theme `Desert` exposed unreadable wrapper command text
+  because the toolbar still used product brown brushes under high contrast; the follow-up fix
+  switches command foreground, border, hover, and disabled brushes to `SystemColors` when
+  `SystemParameters.HighContrast` is true. The Desert contrast-theme re-check passed on
+  2026-07-12.
 
 ## Phase 25: JSON-only administrator browser shell policy
 
