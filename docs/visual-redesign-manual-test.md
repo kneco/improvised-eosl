@@ -15,8 +15,8 @@ Passed in the current user session on 2026-07-10:
 - the diagnostic log recorded successful DWM frame tint application for border, caption, and text;
 - Back and Forward rendered as disabled at startup while Reload, address navigation, Settings,
   Diagnostics, and the compatibility status remained enabled;
-- Forward and address navigation were visually distinct: Forward used the browser-history arrow,
-  while address navigation used the page/enter-style mark;
+- Forward and the then-present address navigation button were visually distinct: Forward used the
+  browser-history arrow, while address navigation used the page/enter-style mark;
 - the compatibility status retained its visible short text and complete UI Automation name,
   including origin plus enabled, denied, and detected API lists;
 - the compatibility detail window opened and displayed the same complete origin/API detail;
@@ -60,10 +60,10 @@ Use the built-in home page and at least one ordinary HTTP(S) site.
 
 ## Browser Commands
 
-1. Confirm Back, Forward, Reload, address navigation, Settings, Diagnostics, and compatibility
-   status icons use the brown command palette.
-2. Confirm Forward and address navigation are visually distinct. Forward should read as browser
-   history movement; address navigation should read as opening the typed address.
+1. Confirm Back, Forward, Reload, Settings, Diagnostics, and compatibility status icons use the
+   brown command palette.
+2. Confirm typed-address navigation works by pressing Enter in the address field. The standalone
+   Go/address navigation button was removed after Issue #43.
 3. Confirm disabled Back/Forward states remain visibly disabled without relying only on color.
 4. Confirm command tooltips, keyboard focus, click targets, and UI Automation names are unchanged.
 

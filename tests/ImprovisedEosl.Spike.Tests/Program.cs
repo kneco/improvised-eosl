@@ -1289,7 +1289,6 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
             AddressEntryVisible: true,
             HistoryCommandVisible: true,
             ReloadCommandVisible: true,
-            GoCommandVisible: true,
             SettingsCommandVisible: true,
             DiagnosticsCommandVisible: true,
             CompatibilityStatusVisible: true),
@@ -1301,11 +1300,19 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
             ToolbarAddressEntryHidden = true,
             ToolbarGoCommandHidden = false
         });
-    Equal(1, addressHidden.Diagnostics.Count);
+    Equal(0, addressHidden.Diagnostics.Count);
     Equal(true, addressHidden.Presentation.PrimaryToolbarVisible);
     Equal(false, addressHidden.Presentation.AddressEntryVisible);
-    Equal(false, addressHidden.Presentation.GoCommandVisible);
     Equal(true, addressHidden.Presentation.HistoryCommandVisible);
+
+    var goHidden = BrowserShellPresentationPolicy.Resolve(
+        BrowserShellPolicy.Standard with
+        {
+            ToolbarGoCommandHidden = true
+        });
+    Equal(1, goHidden.Diagnostics.Count);
+    Equal(true, goHidden.Presentation.AddressEntryVisible);
+    Equal(true, goHidden.Presentation.HistoryCommandVisible);
 
     var restricted = BrowserShellPresentationPolicy.Resolve(
         BrowserShellPolicy.Standard with
@@ -1324,7 +1331,6 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
             AddressEntryVisible: false,
             HistoryCommandVisible: false,
             ReloadCommandVisible: false,
-            GoCommandVisible: false,
             SettingsCommandVisible: false,
             DiagnosticsCommandVisible: false,
             CompatibilityStatusVisible: false),

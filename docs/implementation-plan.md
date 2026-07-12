@@ -1032,9 +1032,11 @@ Status:
 - The former full-width status row is replaced by a focusable compact status button next to the
   address field. The button retains short text, uses state-specific geometry, exposes complete
   Automation and tooltip text, and opens the same detail through keyboard or pointer activation.
-- The navigation controls keep the address field and Go adjacent; the compatibility status follows
-  Go so origin-related trust information remains nearby without splitting the navigation action.
-  The corrected order passed normal-user visual confirmation on 2026-07-07.
+- The original compact-status correction kept the address field and Go adjacent, with
+  compatibility status after Go so origin-related trust information stayed nearby without splitting
+  the navigation action. Issue #43 later removed the standalone Go button, so typed-address
+  navigation now uses Enter in the address field and compatibility status follows the address
+  field.
 - The first UI inspection rejected a native MessageBox because it clipped the complete detail.
   The replacement owned WPF detail window wraps the origin/API text, bounds its height with a
   vertical scrollbar, and provides default and cancel Close behavior.
@@ -1194,8 +1196,9 @@ Design decision:
   failure, leave the native frame unchanged and continue normally.
 - Keep command icons as dependency-free XAML geometry resources. Do not introduce an SVG renderer
   or a UI icon library for this narrow WPF shell.
-- Make the address navigation icon visually distinct from the Forward browser-history icon. Forward
-  remains a simple right arrow; address navigation uses a page/enter-style mark.
+- The original design made the address navigation icon visually distinct from the Forward
+  browser-history icon. Issue #43 later removed the standalone address navigation button because
+  typed-address navigation is available through Enter in the address field.
 - Preserve visible text on application-specific commands and the compatibility status control.
   Compatibility status meaning must remain available through icon geometry, short text, tooltip,
   and UI Automation text, not color alone.
@@ -1215,8 +1218,7 @@ Implementation gate:
 Status:
 
 - Implemented in the WPF shell as a visual-only change. The command palette now uses the brown
-  shell resource colors, and the address navigation icon is visually distinct from the Forward
-  history icon.
+  shell resource colors. The standalone address navigation icon was later removed by Issue #43.
 - The application icon generator is dependency-free Python standard library code and regenerates a
   tracked multi-resolution `.ico` containing 16, 20, 24, 32, 40, 48, 64, 128, and 256 pixel images.
 - The tracked icon no longer uses the former blue `IE` wordmark. It uses a brown Improvised EOSL
@@ -1245,7 +1247,7 @@ Design decision:
   oversized files, and impossible command combinations fall back to the standard visible shell and
   log a warning.
 - Allow `toolbar-primary-toolbar-hidden:true` to hide the full wrapper toolbar, including Back,
-  Forward, Reload, address entry, Go, Settings, Diagnostics, compatibility status, and
+  Forward, Reload, address entry, Settings, Diagnostics, compatibility status, and
   current-origin controls. This matches line-of-business operation where browser-like escape paths
   are intentionally suppressed.
 - Treat full-toolbar hidden mode as an operational tradeoff, not a trust UI or security boundary.
@@ -1313,9 +1315,11 @@ Status:
   unknown-property fail-safe behavior, and a complete standard-policy template. Runtime
   `--shell-policy <path>` source selection is implemented. WPF toolbar visibility mutation now
   applies the version 1 `toolbar-...-hidden` keys at startup: full primary-toolbar hidden mode
-  collapses the wrapper toolbar including compatibility status/current-origin controls, and hidden
-  address entry also hides the typed-address Go command. Command-line export/apply/reset modes now
-  run from WPF application startup before `MainWindow` or WebView2 is created:
+  collapses the wrapper toolbar including compatibility status/current-origin controls. The
+  version 1 `toolbar-go-command-hidden` key remains accepted for existing policy-file
+  compatibility, but the current shell has no standalone Go button after Issue #43. Command-line
+  export/apply/reset modes now run from WPF application startup before `MainWindow` or WebView2 is
+  created:
   `--export-shell-policy <path>` writes the effective policy, `--apply-shell-policy <source>
   --shell-policy <target>` validates and atomically replaces the target, and
   `--reset-user-settings` resets only the user-managed initial URL and user compatibility
@@ -1407,12 +1411,54 @@ Status:
 - The shell policy JSON layout has moved from nested enum-style
   `navigationAccelerators.historyCommands:suppressed` values to administrator-facing flat boolean
   keys.
-- `--shell-policy <path>` now loads the Core browser-shell policy at WPF startup. When
+- `--shell-policy <path>` now loads the Core browser-shell policy at WPF startup. Toolbar
+  visibility keys are applied through the shell presentation policy. When
   `keyboard-history-command-disabled` or `keyboard-reload-command-disabled` is true, the existing
   navigation shortcut classifier suppresses the targeted WPF routed key event with `Handled=true`
-  and logs only bounded command categories. Toolbar visibility keys are parsed but not yet applied
-  to the WPF shell.
+  and logs only bounded command categories.
 - Production shell-policy manual validation passed on 2026-07-11 for the tested keyboard path.
   Diagnostics confirmed policy-loaded WPF suppression for `Alt+Left`, `Alt+Right`, `Ctrl+R`, and
   `F5`, and confirmed `Ctrl+F` still opened WebView2 find-in-page. Dedicated Browser Back /
   Forward hardware keys remain untested because the tester's keyboard does not provide them.
+
+## Phase 27: remove standalone address Go command
+
+Goal: resolve Issue #43 by removing the unintuitive standalone Go button from the wrapper toolbar
+while preserving ordinary address navigation and the published browser shell policy boundary.
+
+Design decision:
+
+- Treat typed-address navigation as an address-entry behavior: pressing Enter in the editable
+  address field navigates to the typed URL, local HTML path, or search fallback exactly as before.
+- Remove the standalone Go/address-navigation button and its unused page/enter geometry from the
+  WPF toolbar. This follows the current Edge-style expectation that the location field itself owns
+  typed navigation.
+- Keep Back, Forward, Reload, Settings, Diagnostics, and compatibility status as visible toolbar
+  commands in the standard shell.
+- Keep compatibility status immediately after the address field. It must remain visible text plus
+  icon, tooltip, and UI Automation text; it must not move inside the editable URL field.
+- Preserve the schema version 1 `toolbar-go-command-hidden` key for existing policy files and
+  template export. The key is now a deprecated compatibility no-op because there is no current Go
+  command to hide.
+- Do not change WebView2 settings, browser security, origin policy, compatibility permission,
+  startup profiles, local-content loading, modal synchronization, or navigation accelerator
+  suppression.
+
+Implementation gate:
+
+1. Remove only the visible Go button and unused icon resource; keep `AddressBox_KeyDown` Enter
+   navigation.
+2. Update the pure presentation model and tests so standard shell no longer exposes a standalone
+   Go command while still accepting/exporting `toolbar-go-command-hidden`.
+3. Update browser-shell policy and manual-test docs to describe the deprecated key and Enter-only
+   typed-address navigation.
+4. Build, run the policy test executable, run the WebView2 `--auto` smoke when available, and run
+   `git diff --check`.
+
+Status:
+
+- Implemented as a shell UI simplification. The visible Go button and its geometry resource are
+  removed; Enter in the address field remains the only typed-address navigation command.
+- `toolbar-go-command-hidden` remains parsed, logged, saved, and exported for schema version 1
+  compatibility. Setting it records a presentation-normalization diagnostic but does not affect
+  visible UI.

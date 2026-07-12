@@ -319,7 +319,6 @@ public partial class MainWindow : Window
         BackButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
         ForwardButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
         ReloadButton.Visibility = ToVisibility(presentation.ReloadCommandVisible);
-        NavigateButton.Visibility = ToVisibility(presentation.GoCommandVisible);
         ApplicationSettingsButton.Visibility = ToVisibility(presentation.SettingsCommandVisible);
         DiagnosticsButton.Visibility = ToVisibility(presentation.DiagnosticsCommandVisible);
         CompatibilityStatusButton.Visibility = ToVisibility(presentation.CompatibilityStatusVisible);
@@ -329,7 +328,6 @@ public partial class MainWindow : Window
             $"addressEntryVisible={presentation.AddressEntryVisible}; " +
             $"historyCommandVisible={presentation.HistoryCommandVisible}; " +
             $"reloadCommandVisible={presentation.ReloadCommandVisible}; " +
-            $"goCommandVisible={presentation.GoCommandVisible}; " +
             $"settingsCommandVisible={presentation.SettingsCommandVisible}; " +
             $"diagnosticsCommandVisible={presentation.DiagnosticsCommandVisible}; " +
             $"compatibilityStatusVisible={presentation.CompatibilityStatusVisible}");
@@ -943,11 +941,6 @@ public partial class MainWindow : Window
         {
             ParentWebView.CoreWebView2.GoForward();
         }
-    }
-
-    private void Navigate_Click(object sender, RoutedEventArgs e)
-    {
-        NavigateFromAddressBar();
     }
 
     private void Diagnostics_Click(object sender, RoutedEventArgs e)

@@ -5,7 +5,6 @@ public sealed record BrowserShellPresentation(
     bool AddressEntryVisible,
     bool HistoryCommandVisible,
     bool ReloadCommandVisible,
-    bool GoCommandVisible,
     bool SettingsCommandVisible,
     bool DiagnosticsCommandVisible,
     bool CompatibilityStatusVisible);
@@ -30,27 +29,25 @@ public static class BrowserShellPresentationPolicy
                     AddressEntryVisible: false,
                     HistoryCommandVisible: false,
                     ReloadCommandVisible: false,
-                    GoCommandVisible: false,
                     SettingsCommandVisible: false,
                     DiagnosticsCommandVisible: false,
                     CompatibilityStatusVisible: false),
                 diagnostics);
         }
 
-        if (policy.ToolbarAddressEntryHidden && !policy.ToolbarGoCommandHidden)
+        if (policy.ToolbarGoCommandHidden)
         {
             diagnostics.Add(
-                "toolbar-address-entry-hidden treats toolbar-go-command-hidden as true");
+                "toolbar-go-command-hidden is accepted for schema compatibility; " +
+                "standard navigation uses the address entry Enter key");
         }
 
-        var addressEntryVisible = !policy.ToolbarAddressEntryHidden;
         return new BrowserShellPresentationResult(
             new BrowserShellPresentation(
                 PrimaryToolbarVisible: true,
-                AddressEntryVisible: addressEntryVisible,
+                AddressEntryVisible: !policy.ToolbarAddressEntryHidden,
                 HistoryCommandVisible: !policy.ToolbarHistoryCommandHidden,
                 ReloadCommandVisible: !policy.ToolbarReloadCommandHidden,
-                GoCommandVisible: addressEntryVisible && !policy.ToolbarGoCommandHidden,
                 SettingsCommandVisible: !policy.ToolbarSettingsCommandHidden,
                 DiagnosticsCommandVisible: !policy.ToolbarDiagnosticsCommandHidden,
                 CompatibilityStatusVisible: true),
