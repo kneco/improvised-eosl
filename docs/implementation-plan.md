@@ -1175,6 +1175,10 @@ Status:
 - Research and design are documented; no implementation is authorized or present.
 - A bounded JavaScript shim remains a feasibility hypothesis, not an accepted compatibility
   contract. Generic writable `KeyboardEvent` parity is rejected.
+- A shared local manual/reference fixture, `keyboard-event-reference.html`, and the checklist in
+  `docs/keyboard-event-reference-manual-test.md` are available for Edge IE mode and WebView2
+  measurement. The fixture is measurement-only and does not add production keyboard interception,
+  a host bridge, script rewriting, or WebView2 security changes.
 
 ## Phase 24: brown visual identity redesign
 

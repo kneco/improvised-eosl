@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>keyboard event reference fixture</title>
+  <style>
+    body {
+      margin: 24px;
+      color: #222222;
+      background: #ffffff;
+      font-family: Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1100px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button,
+    select {
+      margin: 0 6px 8px 0;
+      padding: 6px 10px;
+    }
+
+    input,
+    textarea,
+    select {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    input,
+    textarea {
+      display: block;
+      width: 34rem;
+      margin: 4px 0 12px;
+      padding: 6px;
+    }
+
+    textarea {
+      height: 72px;
+    }
+
+    .targets {
+      margin: 16px 0;
+    }
+
+    .target {
+      display: inline-block;
+      width: 240px;
+      min-height: 48px;
+      margin: 0 8px 8px 0;
+      padding: 10px;
+      border: 1px solid #999999;
+      background: #f4f4f4;
+      vertical-align: top;
+    }
+
+    .target:focus {
+      outline: 2px solid #0067c0;
+      outline-offset: 2px;
+    }
+
+    dl {
+      margin: 12px 0;
+    }
+
+    dt {
+      float: left;
+      clear: left;
+      width: 120px;
+      font-weight: bold;
+    }
+
+    dd {
+      margin: 0 0 4px 130px;
+      min-height: 1.2em;
+      word-break: break-all;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 5px;
+      border: 1px solid #999999;
+      vertical-align: top;
+      text-align: left;
+      word-break: break-all;
+    }
+
+    th {
+      background: #eeeeee;
+    }
+
+    pre {
+      max-height: 280px;
+      padding: 10px;
+      overflow: auto;
+      border: 1px solid #999999;
+      background: #f4f4f4;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>keyboard event reference fixture</h1>
+    <p>
+      This local fixture measures legacy keyboard event properties for Edge IE mode and WebView2
+      comparison. It does not install a compatibility shim, host object, native key hook, or
+      synthetic keyboard redispatch path.
+    </p>
+
+    <section>
+      <h2>measurement setup</h2>
+      <label for="case-name">manual case label</label>
+      <input id="case-name" value="letter-a" autocomplete="off">
+
+      <label for="mutation-mode">handler action</label>
+      <select id="mutation-mode">
+        <option value="none">none</option>
+        <option value="keyCodeZero">event.keyCode = 0</option>
+        <option value="keyCodeOriginal">event.keyCode = original keyCode</option>
+        <option value="returnValueFalse">event.returnValue = false</option>
+        <option value="preventDefault">event.preventDefault()</option>
+        <option value="cancelBubbleTrue">event.cancelBubble = true</option>
+        <option value="stopPropagation">event.stopPropagation()</option>
+        <option value="returnValueAndCancelBubble">returnValue=false + cancelBubble=true</option>
+      </select>
+
+      <button id="clear-log" type="button">clear results</button>
+      <button id="copy-summary" type="button">select summary JSON</button>
+      <dl>
+        <dt>event count</dt>
+        <dd id="event-count">0</dd>
+        <dt>last action</dt>
+        <dd id="last-action">none</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2>targets</h2>
+      <p>
+        Focus one target, set the case label and action, then press the key being measured. The
+        fixture records event metadata only; it never records target field contents.
+      </p>
+      <div class="targets">
+        <div
+          id="inline-target"
+          class="target"
+          tabindex="0"
+          onkeydown="fixtureInlineHandler(event)"
+          onkeypress="fixtureInlineHandler(event)"
+          onkeyup="fixtureInlineHandler(event)">inline handler target</div>
+        <div id="property-target" class="target" tabindex="0">property handler target</div>
+        <div id="listener-target" class="target" tabindex="0">addEventListener target</div>
+        <input
+          id="input-target"
+          value="edit target"
+          autocomplete="off"
+          onkeydown="fixtureInlineHandler(event)"
+          onkeypress="fixtureInlineHandler(event)"
+          onkeyup="fixtureInlineHandler(event)">
+        <textarea
+          id="textarea-target"
+          onkeydown="fixtureInlineHandler(event)"
+          onkeypress="fixtureInlineHandler(event)"
+          onkeyup="fixtureInlineHandler(event)">edit target</textarea>
+        <select
+          id="select-target"
+          onkeydown="fixtureInlineHandler(event)"
+          onkeypress="fixtureInlineHandler(event)"
+          onkeyup="fixtureInlineHandler(event)">
+          <option>first option</option>
+          <option>second option</option>
+        </select>
+        <div
+          id="editable-target"
+          class="target"
+          contenteditable="true"
+          onkeydown="fixtureInlineHandler(event)"
+          onkeypress="fixtureInlineHandler(event)"
+          onkeyup="fixtureInlineHandler(event)">contenteditable target</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>property descriptors</h2>
+      <pre id="descriptors"></pre>
+    </section>
+
+    <section>
+      <h2>event results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>case</th>
+            <th>target</th>
+            <th>handler</th>
+            <th>type</th>
+            <th>phase</th>
+            <th>before</th>
+            <th>after</th>
+            <th>state</th>
+            <th>action result</th>
+          </tr>
+        </thead>
+        <tbody id="results"></tbody>
+      </table>
+      <h3>summary JSON</h3>
+      <pre id="summary"></pre>
+    </section>
+  </main>
+
+  <script>
+    var results = [];
+    var maxRows = 160;
+    var resultBody = document.getElementById("results");
+    var summary = document.getElementById("summary");
+    var eventCount = document.getElementById("event-count");
+    var lastAction = document.getElementById("last-action");
+    var mutationMode = document.getElementById("mutation-mode");
+
+    function hasConstructor(name) {
+      return typeof window[name] !== "undefined" && window[name] && window[name].prototype;
+    }
+
+    function descriptorSummary(owner, name) {
+      var descriptor;
+      if (!owner || !Object.getOwnPropertyDescriptor) {
+        return "unsupported";
+      }
+
+      descriptor = Object.getOwnPropertyDescriptor(owner, name);
+      if (!descriptor) {
+        return "missing";
+      }
+
+      return {
+        enumerable: Boolean(descriptor.enumerable),
+        configurable: Boolean(descriptor.configurable),
+        writable: Boolean(descriptor.writable),
+        get: typeof descriptor.get,
+        set: typeof descriptor.set
+      };
+    }
+
+    function updateDescriptors() {
+      var data = {
+        KeyboardEventPrototype: hasConstructor("KeyboardEvent") ? {
+          keyCode: descriptorSummary(window.KeyboardEvent.prototype, "keyCode"),
+          charCode: descriptorSummary(window.KeyboardEvent.prototype, "charCode"),
+          which: descriptorSummary(window.KeyboardEvent.prototype, "which"),
+          keyIdentifier: descriptorSummary(window.KeyboardEvent.prototype, "keyIdentifier")
+        } : "missing",
+        UIEventPrototype: hasConstructor("UIEvent") ? {
+          which: descriptorSummary(window.UIEvent.prototype, "which")
+        } : "missing",
+        EventPrototype: hasConstructor("Event") ? {
+          returnValue: descriptorSummary(window.Event.prototype, "returnValue"),
+          cancelBubble: descriptorSummary(window.Event.prototype, "cancelBubble")
+        } : "missing",
+        Window: hasConstructor("Window") ? {
+          event: descriptorSummary(window.Window.prototype, "event")
+        } : "missing"
+      };
+      document.getElementById("descriptors").innerHTML = htmlEscape(JSON.stringify(data, null, 2));
+    }
+
+    function htmlEscape(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function phaseName(phase) {
+      if (phase === 1) {
+        return "capture";
+      }
+      if (phase === 2) {
+        return "target";
+      }
+      if (phase === 3) {
+        return "bubble";
+      }
+      return "none";
+    }
+
+    function targetKind(target) {
+      var tag;
+      if (!target) {
+        return "unknown";
+      }
+
+      tag = String(target.tagName || "").toLowerCase();
+      if (tag === "input") {
+        return "input";
+      }
+      if (tag === "textarea") {
+        return "textarea";
+      }
+      if (tag === "select") {
+        return "select";
+      }
+      if (target.isContentEditable) {
+        return "contenteditable";
+      }
+      if (target.id) {
+        return target.id;
+      }
+      return tag || "other";
+    }
+
+    function valueSnapshot(event) {
+      return {
+        key: typeof event.key === "undefined" ? "undefined" : String(event.key),
+        code: typeof event.code === "undefined" ? "undefined" : String(event.code),
+        keyCode: event.keyCode,
+        charCode: event.charCode,
+        which: event.which,
+        keyIdentifier: event.keyIdentifier,
+        returnValue: event.returnValue,
+        cancelBubble: event.cancelBubble,
+        defaultPrevented: event.defaultPrevented
+      };
+    }
+
+    function eventState(event) {
+      return {
+        bubbles: event.bubbles,
+        cancelable: event.cancelable,
+        isTrusted: event.isTrusted,
+        repeat: event.repeat,
+        isComposing: event.isComposing,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        windowEventSame: window.event === event
+      };
+    }
+
+    function applyAction(event) {
+      var mode = mutationMode.value;
+      if (mode === "none") {
+        return "none";
+      }
+
+      try {
+        if (mode === "keyCodeZero") {
+          event.keyCode = 0;
+          return "assigned keyCode=0";
+        }
+        if (mode === "keyCodeOriginal") {
+          event.keyCode = event.keyCode;
+          return "assigned keyCode=original";
+        }
+        if (mode === "returnValueFalse") {
+          event.returnValue = false;
+          return "assigned returnValue=false";
+        }
+        if (mode === "preventDefault") {
+          event.preventDefault();
+          return "called preventDefault";
+        }
+        if (mode === "cancelBubbleTrue") {
+          event.cancelBubble = true;
+          return "assigned cancelBubble=true";
+        }
+        if (mode === "stopPropagation") {
+          event.stopPropagation();
+          return "called stopPropagation";
+        }
+        if (mode === "returnValueAndCancelBubble") {
+          event.returnValue = false;
+          event.cancelBubble = true;
+          return "assigned returnValue=false and cancelBubble=true";
+        }
+      } catch (error) {
+        return "error: " + (error && error.name ? error.name : String(error));
+      }
+
+      return "unknown mode: " + mode;
+    }
+
+    function record(event, handlerKind, shouldAct) {
+      var before = valueSnapshot(event);
+      var action = shouldAct ? applyAction(event) : "observed";
+      var after = valueSnapshot(event);
+      var row = {
+        index: results.length + 1,
+        caseName: document.getElementById("case-name").value || "(blank)",
+        target: targetKind(event.target || event.srcElement),
+        handlerKind: handlerKind,
+        type: event.type,
+        phase: phaseName(event.eventPhase),
+        before: before,
+        after: after,
+        state: eventState(event),
+        action: action
+      };
+
+      results.push(row);
+      if (results.length > maxRows) {
+        results.shift();
+      }
+
+      render();
+    }
+
+    function fixtureInlineHandler(event) {
+      record(event || window.event, "inline", mutationMode.value !== "none");
+    }
+
+    window.fixtureInlineHandler = fixtureInlineHandler;
+
+    function appendCell(row, value) {
+      var td = document.createElement("td");
+      td.innerHTML = htmlEscape(value);
+      row.appendChild(td);
+    }
+
+    function render() {
+      var i;
+      var row;
+      var tr;
+      resultBody.innerHTML = "";
+      for (i = results.length - 1; i >= 0; i -= 1) {
+        row = results[i];
+        tr = document.createElement("tr");
+        appendCell(tr, row.index);
+        appendCell(tr, row.caseName);
+        appendCell(tr, row.target);
+        appendCell(tr, row.handlerKind);
+        appendCell(tr, row.type);
+        appendCell(tr, row.phase);
+        appendCell(tr, JSON.stringify(row.before));
+        appendCell(tr, JSON.stringify(row.after));
+        appendCell(tr, JSON.stringify(row.state));
+        appendCell(tr, row.action);
+        resultBody.appendChild(tr);
+      }
+
+      eventCount.innerHTML = String(results.length);
+      lastAction.innerHTML = results.length ? htmlEscape(results[results.length - 1].action) : "none";
+      summary.innerHTML = htmlEscape(JSON.stringify({
+        userAgent: navigator.userAgent,
+        url: location.href,
+        results: results
+      }, null, 2));
+    }
+
+    function installPropertyHandlers(element) {
+      element.onkeydown = function (event) {
+        record(event || window.event, "property", mutationMode.value !== "none");
+      };
+      element.onkeypress = function (event) {
+        record(event || window.event, "property", mutationMode.value !== "none");
+      };
+      element.onkeyup = function (event) {
+        record(event || window.event, "property", mutationMode.value !== "none");
+      };
+    }
+
+    function installListenerHandlers(element, actionOnEarly) {
+      var types = ["keydown", "keypress", "keyup"];
+      var i;
+      for (i = 0; i < types.length; i += 1) {
+        element.addEventListener(types[i], function (event) {
+          record(event, "target-listener-early", Boolean(actionOnEarly));
+        });
+        element.addEventListener(types[i], function (event) {
+          record(event, "target-listener-late", false);
+        });
+      }
+    }
+
+    function installDocumentHandlers() {
+      var types = ["keydown", "keypress", "keyup", "click"];
+      var i;
+      for (i = 0; i < types.length; i += 1) {
+        document.addEventListener(types[i], function (event) {
+          record(event, "document-capture", false);
+        }, true);
+        document.addEventListener(types[i], function (event) {
+          record(event, "document-bubble", false);
+        }, false);
+      }
+    }
+
+    installDocumentHandlers();
+    installPropertyHandlers(document.getElementById("property-target"));
+    installListenerHandlers(document.getElementById("listener-target"), true);
+    installListenerHandlers(document.getElementById("inline-target"), false);
+    installListenerHandlers(document.getElementById("input-target"), false);
+    installListenerHandlers(document.getElementById("textarea-target"), false);
+    installListenerHandlers(document.getElementById("select-target"), false);
+    installListenerHandlers(document.getElementById("editable-target"), false);
+
+    document.getElementById("clear-log").onclick = function () {
+      results = [];
+      render();
+    };
+
+    document.getElementById("copy-summary").onclick = function () {
+      var range;
+      var selection;
+      if (document.body.createTextRange) {
+        range = document.body.createTextRange();
+        range.moveToElementText(summary);
+        range.select();
+        return;
+      }
+
+      if (document.createRange && window.getSelection) {
+        range = document.createRange();
+        range.selectNodeContents(summary);
+        selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    };
+
+    updateDescriptors();
+    render();
+  </script>
+</body>
+</html>
