@@ -191,6 +191,33 @@ Focused actions:
 Do not paste field contents into issue comments. If exact values are needed, use the compact JSON
 from the page; it records value-length deltas rather than field text.
 
+## 2026-07-18 focused legacy-pattern result summary
+
+User-assisted focused measurements were recorded with `keyboard-legacy-patterns.html` in WebView2 /
+Improvised EOSL and Microsoft Edge IE mode. The first version of the fixture included a hidden
+submit button and focusable report textarea, which polluted the IE mode focus path. Those early
+focus results are treated as fixture noise. The corrected fixture keeps the Field A/B/C probe
+outside a form, adds `focus before`, and removes the compact JSON textarea from normal Tab order.
+
+Corrected Field A + Enter results:
+
+| Action | WebView2 result | Edge IE mode `documentMode=11` result | Current interpretation |
+| --- | --- | --- | --- |
+| `none` | `Enter 13 -> 13`, focus stays `field-a`, `keypress` has `13/13/13` | Same, except baseline `returnValue` readback is `undefined` instead of `true` | Baseline focus path is stable in the corrected fixture. |
+| `window.event.keyCode = 9` | `Enter 13 -> 13`, focus stays `field-a` | Same | No Enter-to-Tab remapping in the supported reference environment. |
+| `window.event.keyCode = 0` | `Enter 13 -> 13`, `keypress` still appears | Same | KeyCode write alone does not cancel, mutate readback, or suppress `keypress`. |
+| `window.event.keyCode = 0 + returnValue=false` | `rv=false`, `dp=true`, `keypress=none` | Same | Suppression appears attributable to `returnValue=false`, not `keyCode=0`. |
+| `event.returnValue = false` | `rv=false`, `dp=true`, `keypress=none` | Same | Native sufficient for the focused Enter cancellation path. |
+| `event.preventDefault()` | `rv=false`, `dp=true`, `keypress=none` | Same | Matches `returnValue=false` for focused Enter cancellation. |
+| `return false from handler` | `rv=true`, `dp=false`, `keypress=none` | Same | Inline handler return cancellation is distinct from `returnValue` readback but matches across environments. |
+| `event.cancelBubble = true` | `document bubble=no`, `same-target late=yes`, `keypress` still appears | Same | Native sufficient for the focused propagation path. |
+
+The focused results do not justify writable `keyCode` emulation for the Edge IE mode
+`documentMode=11` reference environment. A real target codebase may still contain old IE6-8-era
+`keyCode` writes, but current evidence says to look for active behavior in `returnValue=false`,
+inline `return false`, `preventDefault()`, explicit `.focus()`, or framework helpers before
+considering a shim.
+
 ## 2026-07-18 first manual measurement summary
 
 User-assisted measurements were recorded in #46 through #52 with this fixture in WebView2 /

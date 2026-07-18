@@ -214,6 +214,25 @@ Those patterns are narrower than generic writable event emulation but broader th
 measurement. `keyboard-legacy-patterns.html` exists to measure those focused patterns with compact
 visible outcomes instead of a full event-row log.
 
+The corrected focused pass did not reproduce active writable-`keyCode` behavior in Edge IE mode
+`documentMode=11`:
+
+- `window.event.keyCode = 9` did not remap Enter to Tab in WebView2 or Edge IE mode.
+- `window.event.keyCode = 0` did not cancel Enter, change readback, stop propagation, or suppress
+  `keypress` in either environment.
+- Bundled `keyCode=0 + returnValue=false` behaved like `returnValue=false` alone.
+- `returnValue=false` and `preventDefault()` both produced `rv=false`, `dp=true`, and
+  `keypress=none` in both environments.
+- Inline handler `return false` produced `keypress=none` in both environments while leaving the
+  captured readback at `rv=true`, `dp=false`.
+- `cancelBubble=true` stopped document bubbling while allowing same-target late listeners and
+  `keypress` in both environments.
+
+This supports a docs/research conclusion for the supported reference environment: keyCode-write
+lines in target code should be treated as possible IE6-8 residue until a current active behavior
+gap is shown. Active behavior is more likely to come from `returnValue=false`, inline
+`return false`, `preventDefault()`, explicit focus movement, or framework helpers.
+
 ## Exit choices after measurement
 
 The measurement review must choose exactly one outcome:

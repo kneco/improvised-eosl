@@ -1192,6 +1192,12 @@ Status:
   `returnValue=false` / `return false`. A focused companion fixture,
   `keyboard-legacy-patterns.html`, now records only compact latest-result metrics for those
   patterns and remains measurement-only.
+- Corrected focused measurements found no Enter-to-Tab remapping and no useful readback/default
+  behavior change from `window.event.keyCode = 9` or `window.event.keyCode = 0` in WebView2 or
+  Edge IE mode `documentMode=11`. Focused Enter cancellation matched across environments for
+  `event.returnValue=false`, `event.preventDefault()`, and inline handler `return false`; focused
+  `cancelBubble=true` propagation also matched. The remaining #48 risk is the earlier
+  printable-input default-action difference, not the focused Enter path.
 
 ## Phase 24: brown visual identity redesign
 
