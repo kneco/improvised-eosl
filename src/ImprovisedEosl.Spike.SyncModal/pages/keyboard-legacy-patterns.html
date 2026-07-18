@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>legacy keyboard pattern fixture</title>
+  <style>
+    body { margin: 24px; color: #222222; background: #ffffff; font-family: Arial, sans-serif; line-height: 1.45; }
+    main { max-width: 980px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 20px 0 8px; font-size: 18px; }
+    button, input, select, textarea { font: inherit; }
+    button, select { margin: 0 8px 8px 0; padding: 6px 10px; }
+    label { display: inline-block; margin: 0 16px 10px 0; font-weight: bold; }
+    label span { display: block; margin-bottom: 3px; color: #555555; font-size: 12px; font-weight: normal; text-transform: uppercase; }
+    input { box-sizing: border-box; width: 100%; padding: 8px; border: 1px solid #999999; }
+    input:focus { outline: 2px solid #0067c0; outline-offset: 2px; }
+    .controls, .panel { margin: 14px 0; padding: 14px; border: 1px solid #cccccc; background: #f8f8f8; }
+    .fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    .metric { min-height: 62px; padding: 10px; border: 1px solid #cccccc; background: #ffffff; }
+    .metric strong, .metric span { display: block; }
+    .metric strong { margin-bottom: 4px; color: #555555; font-size: 12px; text-transform: uppercase; }
+    .metric span { font-size: 18px; font-weight: bold; word-break: break-word; }
+    .ok span { color: #0f6b2f; }
+    .warn span { color: #8a4b00; }
+    .bad span { color: #a80000; }
+    .hint { margin: 8px 0 0; color: #555555; font-size: 13px; }
+    .environment { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; }
+    .environment dt { font-weight: bold; }
+    .environment dd { margin: 0; word-break: break-word; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 150px; padding: 8px; font-family: Consolas, "Courier New", monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>legacy keyboard pattern fixture</h1>
+    <p>
+      Focus Field A and press the requested key. The page shows only the latest compact result.
+      It does not install an Improvised EOSL shim, host object, native key bridge, or script rewrite.
+    </p>
+
+    <section class="controls" aria-label="test controls">
+      <label>
+        <span>action</span>
+        <select id="action-mode">
+          <option value="none">none</option>
+          <option value="windowKeyCode0">window.event.keyCode = 0</option>
+          <option value="windowKeyCode9">window.event.keyCode = 9</option>
+          <option value="eventKeyCode9">event.keyCode = 9</option>
+          <option value="returnValueFalse">event.returnValue = false</option>
+          <option value="windowKeyCode0ReturnValueFalse">window.event.keyCode = 0 + returnValue=false</option>
+          <option value="windowKeyCode9ReturnValueFalse">window.event.keyCode = 9 + returnValue=false</option>
+          <option value="cancelBubbleTrue">event.cancelBubble = true</option>
+          <option value="preventDefault">event.preventDefault()</option>
+          <option value="returnFalse">return false from handler</option>
+        </select>
+      </label>
+      <button id="reset-button" type="button">reset</button>
+      <button id="copy-button" type="button">copy compact result</button>
+      <p class="hint">
+        This focused page uses inline onkeydown because the external legacy examples most often
+        use Web Forms or page-markup handlers. Suggested first pass: Field A + Enter. Compare
+        focus before/after tick, value length delta, document bubble, and keyCode readback.
+      </p>
+    </section>
+
+    <section id="focus-probe" class="panel" aria-label="focus probe">
+      <h2>test fields</h2>
+      <div class="fields">
+        <label>
+          <span>Field A</span>
+          <input id="field-a" name="fieldA" value="" autocomplete="off" onkeydown="return legacyInlineKeydown(event)">
+        </label>
+        <label>
+          <span>Field B</span>
+          <input id="field-b" name="fieldB" value="" autocomplete="off" onkeydown="return legacyInlineKeydown(event)">
+        </label>
+        <label>
+          <span>Field C</span>
+          <input id="field-c" name="fieldC" value="" autocomplete="off" onkeydown="return legacyInlineKeydown(event)">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="latest result">
+      <h2>latest result</h2>
+      <div class="summary-grid">
+        <div id="metric-action" class="metric"><strong>action</strong><span>none</span></div>
+        <div id="metric-keydown" class="metric"><strong>keydown</strong><span>none</span></div>
+        <div id="metric-readback" class="metric"><strong>keyCode readback</strong><span>none</span></div>
+        <div id="metric-focus-before" class="metric"><strong>focus before</strong><span>none</span></div>
+        <div id="metric-focus" class="metric"><strong>focus after tick</strong><span>none</span></div>
+        <div id="metric-input" class="metric"><strong>value length delta</strong><span>0</span></div>
+        <div id="metric-bubble" class="metric"><strong>document bubble</strong><span>no</span></div>
+        <div id="metric-late" class="metric"><strong>same-target late</strong><span>no</span></div>
+        <div id="metric-keypress" class="metric"><strong>keypress values</strong><span>none</span></div>
+        <div id="metric-window-event" class="metric"><strong>window.event same</strong><span>none</span></div>
+      </div>
+      <p class="hint">
+        Report only the visible metrics above. The compact JSON below is optional when exact values
+        are needed for an issue comment.
+      </p>
+      <textarea id="compact-result" readonly tabindex="-1"></textarea>
+    </section>
+
+    <section class="panel" aria-label="environment">
+      <h2>environment</h2>
+      <dl class="environment">
+        <dt>documentMode</dt>
+        <dd id="env-document-mode">unknown</dd>
+        <dt>compatMode</dt>
+        <dd id="env-compat-mode">unknown</dd>
+        <dt>userAgent</dt>
+        <dd id="env-user-agent">unknown</dd>
+        <dt>URL</dt>
+        <dd id="env-url">unknown</dd>
+      </dl>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var actionMode = document.getElementById("action-mode");
+      var resetButton = document.getElementById("reset-button");
+      var copyButton = document.getElementById("copy-button");
+      var fields = [
+        document.getElementById("field-a"),
+        document.getElementById("field-b"),
+        document.getElementById("field-c")
+      ];
+      var metrics = {
+        action: document.getElementById("metric-action"),
+        keydown: document.getElementById("metric-keydown"),
+        readback: document.getElementById("metric-readback"),
+        focusBefore: document.getElementById("metric-focus-before"),
+        focus: document.getElementById("metric-focus"),
+        input: document.getElementById("metric-input"),
+        bubble: document.getElementById("metric-bubble"),
+        late: document.getElementById("metric-late"),
+        keypress: document.getElementById("metric-keypress"),
+        windowEvent: document.getElementById("metric-window-event")
+      };
+      var compactResult = document.getElementById("compact-result");
+      var state = createEmptyState();
+
+      function createEmptyState() {
+        return {
+          started: false,
+          handlerStyle: "inline",
+          actionMode: actionMode ? actionMode.value : "none",
+          activeBefore: activeId(),
+          activeAfterTick: "",
+          keydown: null,
+          keypress: null,
+          keyup: null,
+          documentBubbleKeydown: false,
+          documentCaptureKeydown: false,
+          targetLateKeydown: false,
+          valueLengthBefore: valueLengths(),
+          valueLengthAfterTick: null
+        };
+      }
+
+      function activeId() {
+        var active = document.activeElement;
+        return active && active.id ? active.id : String(active && active.tagName ? active.tagName : "none");
+      }
+
+      function valueLengths() {
+        return {
+          fieldA: fields[0].value.length,
+          fieldB: fields[1].value.length,
+          fieldC: fields[2].value.length
+        };
+      }
+
+      function valueLengthDelta() {
+        var after = state.valueLengthAfterTick || valueLengths();
+        return {
+          fieldA: after.fieldA - state.valueLengthBefore.fieldA,
+          fieldB: after.fieldB - state.valueLengthBefore.fieldB,
+          fieldC: after.fieldC - state.valueLengthBefore.fieldC
+        };
+      }
+
+      function snapshot(event) {
+        if (!event) {
+          return null;
+        }
+
+        return {
+          type: event.type,
+          key: typeof event.key === "undefined" ? "undefined" : String(event.key),
+          code: typeof event.code === "undefined" ? "undefined" : String(event.code),
+          keyCode: event.keyCode,
+          charCode: event.charCode,
+          which: event.which,
+          returnValue: event.returnValue,
+          cancelBubble: event.cancelBubble,
+          defaultPrevented: event.defaultPrevented,
+          bubbles: event.bubbles,
+          cancelable: event.cancelable,
+          windowEventSame: window.event === event
+        };
+      }
+
+      function applyAction(event) {
+        var winEvent = window.event || event;
+        var mode = actionMode.value;
+
+        try {
+          if (mode === "none") {
+            return "none";
+          }
+          if (mode === "windowKeyCode0") {
+            winEvent.keyCode = 0;
+            return "assigned window.event.keyCode=0";
+          }
+          if (mode === "windowKeyCode9") {
+            winEvent.keyCode = 9;
+            return "assigned window.event.keyCode=9";
+          }
+          if (mode === "eventKeyCode9") {
+            event.keyCode = 9;
+            return "assigned event.keyCode=9";
+          }
+          if (mode === "returnValueFalse") {
+            event.returnValue = false;
+            return "assigned returnValue=false";
+          }
+          if (mode === "windowKeyCode0ReturnValueFalse") {
+            winEvent.keyCode = 0;
+            event.returnValue = false;
+            return "assigned window.event.keyCode=0 and returnValue=false";
+          }
+          if (mode === "windowKeyCode9ReturnValueFalse") {
+            winEvent.keyCode = 9;
+            event.returnValue = false;
+            return "assigned window.event.keyCode=9 and returnValue=false";
+          }
+          if (mode === "cancelBubbleTrue") {
+            event.cancelBubble = true;
+            return "assigned cancelBubble=true";
+          }
+          if (mode === "preventDefault") {
+            event.preventDefault();
+            return "called preventDefault";
+          }
+          if (mode === "returnFalse") {
+            return "will return false";
+          }
+        } catch (error) {
+          return "error: " + (error && error.name ? error.name : String(error));
+        }
+
+        return "unknown action";
+      }
+
+      function beginIfNeeded(event) {
+        if (!state.started) {
+          state = createEmptyState();
+          state.started = true;
+          state.activeBefore = activeId();
+          state.valueLengthBefore = valueLengths();
+        }
+      }
+
+      function handleAction(event, source) {
+        var before;
+        var after;
+        var action;
+
+        beginIfNeeded(event);
+        before = snapshot(event);
+        action = applyAction(event);
+        after = snapshot(event);
+
+        if (event.type === "keydown") {
+          state.keydown = {
+            source: source,
+            before: before,
+            after: after,
+            action: action
+          };
+          scheduleAfterTick();
+          render();
+        }
+
+        return actionMode.value === "returnFalse" ? false : true;
+      }
+
+      function observeEvent(event, source) {
+        beginIfNeeded(event);
+
+        if (event.type === "keydown") {
+          if (source === "document-capture") {
+            state.documentCaptureKeydown = true;
+          }
+          if (source === "document-bubble") {
+            state.documentBubbleKeydown = true;
+          }
+          if (source === "target-late") {
+            state.targetLateKeydown = true;
+          }
+        }
+        if (event.type === "keypress") {
+          state.keypress = snapshot(event);
+        }
+        if (event.type === "keyup") {
+          state.keyup = snapshot(event);
+          scheduleAfterTick();
+        }
+
+        render();
+      }
+
+      function scheduleAfterTick() {
+        window.setTimeout(function () {
+          state.activeAfterTick = activeId();
+          state.valueLengthAfterTick = valueLengths();
+          render();
+        }, 0);
+      }
+
+      function legacyInlineKeydown(event) {
+        event = event || window.event;
+        return handleAction(event, "inline");
+      }
+
+      function installHandlers() {
+        var i;
+        var target;
+
+        for (i = 0; i < fields.length; i += 1) {
+          target = fields[i];
+          target.addEventListener("keydown", function (event) {
+            observeEvent(event, "target-late");
+          }, false);
+
+          target.addEventListener("keypress", function (event) {
+            observeEvent(event, "target-keypress");
+          }, false);
+
+          target.addEventListener("keyup", function (event) {
+            observeEvent(event, "target-keyup");
+          }, false);
+        }
+
+        document.addEventListener("keydown", function (event) {
+          observeEvent(event, "document-capture");
+        }, true);
+
+        document.addEventListener("keydown", function (event) {
+          observeEvent(event, "document-bubble");
+        }, false);
+      }
+
+      function setMetric(metric, value, status) {
+        var span = metric.getElementsByTagName("span")[0];
+        span.innerHTML = escapeHtml(String(value));
+        metric.className = "metric" + (status ? " " + status : "");
+      }
+
+      function keySummary(info) {
+        if (!info) {
+          return "none";
+        }
+        return info.before.key + " " + info.before.keyCode + " -> " + info.after.keyCode;
+      }
+
+      function readbackSummary(info) {
+        if (!info) {
+          return "none";
+        }
+        return "rv=" + info.after.returnValue + ", dp=" + info.after.defaultPrevented;
+      }
+
+      function keypressSummary(info) {
+        if (!info) {
+          return "none";
+        }
+        return "kc=" + info.keyCode + ", cc=" + info.charCode + ", which=" + info.which;
+      }
+
+      function deltaSummary(delta) {
+        return "A " + signed(delta.fieldA) + ", B " + signed(delta.fieldB) + ", C " + signed(delta.fieldC);
+      }
+
+      function signed(value) {
+        return value > 0 ? "+" + value : String(value);
+      }
+
+      function render() {
+        var delta = valueLengthDelta();
+        var keydown = state.keydown;
+        var focusValue = state.activeAfterTick || "pending";
+        var windowEventValue = keydown ? String(keydown.after.windowEventSame) : "none";
+
+        setMetric(metrics.action, actionMode.value + " / inline", "");
+        setMetric(metrics.keydown, keySummary(keydown), keydown ? "ok" : "warn");
+        setMetric(metrics.readback, readbackSummary(keydown), "");
+        setMetric(metrics.focusBefore, state.activeBefore, state.activeBefore === "field-a" ? "ok" : "warn");
+        setMetric(metrics.focus, focusValue, focusValue === "field-b" ? "ok" : "");
+        setMetric(metrics.input, deltaSummary(delta), delta.fieldA || delta.fieldB || delta.fieldC ? "warn" : "ok");
+        setMetric(metrics.bubble, state.documentBubbleKeydown ? "yes" : "no", state.documentBubbleKeydown ? "warn" : "ok");
+        setMetric(metrics.late, state.targetLateKeydown ? "yes" : "no", state.targetLateKeydown ? "ok" : "warn");
+        setMetric(metrics.keypress, keypressSummary(state.keypress), state.keypress ? "ok" : "");
+        setMetric(metrics.windowEvent, windowEventValue, windowEventValue === "true" ? "ok" : "");
+
+        compactResult.value = JSON.stringify({
+          handlerStyle: state.handlerStyle,
+          actionMode: state.actionMode,
+          documentMode: document.documentMode || "missing",
+          compatMode: document.compatMode,
+          userAgent: navigator.userAgent,
+          activeBefore: state.activeBefore,
+          activeAfterTick: state.activeAfterTick,
+          valueLengthDelta: delta,
+          documentCaptureKeydown: state.documentCaptureKeydown,
+          documentBubbleKeydown: state.documentBubbleKeydown,
+          targetLateKeydown: state.targetLateKeydown,
+          keydown: state.keydown,
+          keypress: state.keypress,
+          keyup: state.keyup
+        }, null, 2);
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function reset() {
+        var i;
+        for (i = 0; i < fields.length; i += 1) {
+          fields[i].value = "";
+        }
+        state = createEmptyState();
+        render();
+        fields[0].focus();
+      }
+
+      function copyResult() {
+        compactResult.focus();
+        compactResult.select();
+        try {
+          document.execCommand("copy");
+        } catch (error) {
+          // Manual selection is enough when the clipboard command is unavailable.
+        }
+      }
+
+      resetButton.onclick = reset;
+      copyButton.onclick = copyResult;
+      actionMode.onchange = reset;
+
+      document.getElementById("env-document-mode").innerHTML = escapeHtml(String(document.documentMode || "missing"));
+      document.getElementById("env-compat-mode").innerHTML = escapeHtml(String(document.compatMode));
+      document.getElementById("env-user-agent").innerHTML = escapeHtml(navigator.userAgent);
+      document.getElementById("env-url").innerHTML = escapeHtml(location.href);
+
+      window.legacyInlineKeydown = legacyInlineKeydown;
+      installHandlers();
+      reset();
+    }());
+  </script>
+</body>
+</html>

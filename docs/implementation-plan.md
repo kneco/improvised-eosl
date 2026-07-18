@@ -1187,6 +1187,20 @@ Status:
   remain research items. #48 has a measured difference where `event.returnValue=false` canceled
   visible input in WebView2 but not in Edge IE mode for the tested input path, so it requires
   row-level review rather than implementation by inference.
+- External legacy-code research found real `window.event.keyCode` write patterns that the first
+  broad fixture did not isolate, especially Enter-to-Tab remapping and bundled suppression with
+  `returnValue=false` / `return false`. A focused companion fixture,
+  `keyboard-legacy-patterns.html`, now records only compact latest-result metrics for those
+  patterns and remains measurement-only.
+- Corrected focused measurements found no Enter-to-Tab remapping and no useful readback/default
+  behavior change from `window.event.keyCode = 9` or `window.event.keyCode = 0` in WebView2 or
+  Edge IE mode `documentMode=11`. Focused Enter cancellation matched across environments for
+  `event.returnValue=false`, `event.preventDefault()`, and inline handler `return false`; focused
+  `cancelBubble=true` propagation also matched. The remaining #48 risk is the earlier
+  printable-input default-action difference, not the focused Enter path.
+- Ordinary / Enter-focused `keyCode` write behavior is split from function-key suppression:
+  #46 is closed for the measured ordinary/Enter scope, while #55 carries F1/F3/F5/F6/F10/F11/F12
+  browser-accelerator suppression as the product-critical Japanese enterprise-system path.
 
 ## Phase 24: brown visual identity redesign
 
