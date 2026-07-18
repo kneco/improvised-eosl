@@ -18,6 +18,7 @@ This checklist supports:
 - #50: `keypress`, `charCode`, and `which`
 - #51: `keyIdentifier`
 - #52: aggregate review gate
+- #55: function-key / browser-accelerator suppression
 
 ## Boundaries
 
@@ -58,6 +59,12 @@ For focused legacy Web Forms style key-write checks, use:
 http://127.0.0.1:18080/keyboard-legacy-patterns.html
 ```
 
+For function-key / browser-accelerator suppression checks, use:
+
+```text
+http://127.0.0.1:18080/keyboard-function-key-suppression.html
+```
+
 ## Start Edge IE mode reference
 
 1. Start Improvised EOSL so the local test server is listening on port `18080`.
@@ -74,6 +81,12 @@ For the focused legacy-pattern page, use the same IE mode setup with:
 
 ```text
 http://127.0.0.1:18080/keyboard-legacy-patterns.html
+```
+
+For the focused function-key page, use the same IE mode setup with:
+
+```text
+http://127.0.0.1:18080/keyboard-function-key-suppression.html
 ```
 
 Record the exact IE mode setup path, Edge version, OS build, display scale, keyboard layout, and
@@ -221,6 +234,54 @@ considering a shim.
 Function-key / browser-accelerator suppression is not concluded by this Enter-focused matrix.
 That product-critical question is split to #55 and should measure F1/F3/F5/F6/F10/F11/F12
 browser/host outcomes directly.
+
+## Focused function-key fixture
+
+`keyboard-function-key-suppression.html` is the focused #55 companion page. It records only the
+latest bounded result for real function-key presses. It does not install a production shim, host
+object, native key bridge, script rewrite, WebView2 setting change, or shell-policy accelerator
+suppression.
+
+Use it for:
+
+- #55: F1/F3/F5/F6/F10/F11/F12 browser/host outcomes under legacy handler actions;
+- #46: confirming whether `window.event.keyCode = 0` has a distinct function-key effect;
+- #48: comparing `event.returnValue=false`, inline `return false`, and `preventDefault()`;
+- #49: confirming that `cancelBubble=true` is propagation-only for focused function-key cases;
+- #52: aggregate decision after the function-key matrix is complete.
+
+For each environment, measure at minimum `F1`, `F3`, `F5`, `F6`, `F10`, `F11`, and `F12` against
+these actions:
+
+| Action | Primary question |
+| --- | --- |
+| `none` | Baseline browser/host behavior |
+| `window.event.keyCode = 0` | Function-key suppression by keyCode write alone |
+| `event.returnValue = false` | Legacy default-action cancellation |
+| `window.event.keyCode = 0 + returnValue=false` | Common bundled suppression pattern |
+| `return false from handler` | Inline handler return-value cancellation |
+| `event.preventDefault()` | Modern cancellation control |
+| `event.cancelBubble = true` | Propagation-only control |
+
+For each row:
+
+1. Select the expected key and action.
+2. Click `reset run`.
+3. Confirm the key target has focus.
+4. Press the real function key once.
+5. If a visible browser action occurs, set `manual outcome`.
+6. Record only the visible metrics:
+   `observed key`, `keyCode readback`, `cancel state`, `propagation`, `focus`,
+   `window focus`, `reloads`, `onhelp`, `fullscreen`, `keyup`, and `manual outcome`.
+
+The page stores reload counters in `sessionStorage` so F5 can be observed after the page returns.
+The page's `onhelp` hook records whether F1 help handling fired and returns `true`; it is not an
+extra `onhelp="return false"` suppression mechanism. Use `onhelp-return-false.html` for the #16
+syntax-specific check.
+
+Do not paste arbitrary key sequences or field contents into issue comments. The fixture does not
+include editable text targets, and copied JSON stores bounded function-key categories and counters
+only.
 
 ## 2026-07-18 first manual measurement summary
 

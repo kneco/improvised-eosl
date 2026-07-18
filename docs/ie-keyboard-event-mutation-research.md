@@ -238,6 +238,15 @@ accelerator suppression is split to #55 because Japanese enterprise systems may 
 operations to F1/F3/F5/F6/F10/F11/F12 or suppress browser-level behavior. That must be measured
 by final browser/host outcomes, not inferred from printable or Enter key paths.
 
+`keyboard-function-key-suppression.html` is the #55 measurement fixture. It compares real
+function-key presses under the same legacy handler actions used in the focused `keyCode` pass:
+`none`, `window.event.keyCode = 0`, `event.returnValue=false`, bundled
+`keyCode=0 + returnValue=false`, inline `return false`, `preventDefault()`, and
+`cancelBubble=true`. The fixture intentionally separates page-script-visible values from final
+browser outcomes such as reload, browser UI focus, F1 help handling, F11 fullscreen changes, and
+F12 developer tools. It does not enable host accelerator policy or production compatibility
+behavior.
+
 ## Exit choices after measurement
 
 The measurement review must choose exactly one outcome:
