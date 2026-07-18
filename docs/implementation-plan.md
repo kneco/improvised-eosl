@@ -1201,6 +1201,11 @@ Status:
 - Ordinary / Enter-focused `keyCode` write behavior is split from function-key suppression:
   #46 is closed for the measured ordinary/Enter scope, while #55 carries F1/F3/F5/F6/F10/F11/F12
   browser-accelerator suppression as the product-critical Japanese enterprise-system path.
+- A focused #55 manual fixture, `keyboard-function-key-suppression.html`, is available from the
+  built-in home page for WebView2 / Edge IE mode comparison. It is measurement-only: it records
+  compact function-key outcomes, reload counters, focus/window blur counters, F1 `onhelp`
+  observation, and F11 fullscreen observation without adding a shim, host bridge, script rewrite,
+  WebView2 setting change, or production shell-policy accelerator suppression.
 
 ## Phase 24: brown visual identity redesign
 
