@@ -52,6 +52,12 @@ Alternative direct URL while the local server is running:
 http://127.0.0.1:18080/keyboard-event-reference.html
 ```
 
+For focused legacy Web Forms style key-write checks, use:
+
+```text
+http://127.0.0.1:18080/keyboard-legacy-patterns.html
+```
+
 ## Start Edge IE mode reference
 
 1. Start Improvised EOSL so the local test server is listening on port `18080`.
@@ -63,6 +69,12 @@ http://127.0.0.1:18080/keyboard-event-reference.html
 
 3. Reload the page in Internet Explorer mode.
 4. Confirm the IE mode indicator is visible before recording reference measurements.
+
+For the focused legacy-pattern page, use the same IE mode setup with:
+
+```text
+http://127.0.0.1:18080/keyboard-legacy-patterns.html
+```
 
 Record the exact IE mode setup path, Edge version, OS build, display scale, keyboard layout, and
 whether IME is active.
@@ -139,6 +151,45 @@ A bounded shim candidate must still go through #52 and a separate implementation
 define a new compatibility API permission, exact normalized HTTP(S) origin scope, top-level-only
 initial scope, reload requirement for allow/revoke, frame exclusion, no synthetic redispatch, no
 native key bridge, and diagnostics with no keylogging behavior.
+
+## Focused legacy-pattern fixture
+
+`keyboard-legacy-patterns.html` is a smaller companion page for the external legacy patterns found
+after the first #46 pass. It intentionally shows only the latest compact result instead of a full
+event row log.
+
+Use it for:
+
+- #46: `window.event.keyCode = 0`, `window.event.keyCode = 9`, and `event.keyCode = 9`;
+- #48: `event.returnValue = false`, `return false`, and `preventDefault()` controls;
+- #49: `event.cancelBubble = true` with same-target late listener and document-bubble visibility;
+- #52: deciding whether a real legacy pattern remains after the focused measurement.
+
+Initial focused pass:
+
+1. Open the page in WebView2 and Edge IE mode.
+2. Confirm `documentMode`, `compatMode`, and `userAgent` are visible in the environment section.
+3. Keep the default inline `onkeydown` handler source.
+4. For each action below, click `reset`, focus Field A, press Enter once, and record only:
+   `keydown`, `keyCode readback`, `focus after tick`, `form submit fired`, `value length delta`,
+   `document bubble`, `same-target late`, `keypress values`, and `window.event same`.
+
+Focused actions:
+
+| Action | Primary question |
+| --- | --- |
+| `none` | Baseline Enter behavior |
+| `window.event.keyCode = 9` | Enter-to-Tab remapping claim |
+| `event.keyCode = 9` | Handler-argument write comparison |
+| `window.event.keyCode = 0` | Enter suppression by keyCode write alone |
+| `event.returnValue = false` | Legacy cancellation without keyCode write |
+| `window.event.keyCode = 0 + returnValue=false` | Common bundled suppression pattern |
+| `return false from handler` | Inline handler return-value cancellation |
+| `event.preventDefault()` | Modern cancellation control |
+| `event.cancelBubble = true` | Propagation-only control |
+
+Do not paste field contents into issue comments. If exact values are needed, use the compact JSON
+from the page; it records value-length deltas rather than field text.
 
 ## 2026-07-18 first manual measurement summary
 

@@ -1187,6 +1187,11 @@ Status:
   remain research items. #48 has a measured difference where `event.returnValue=false` canceled
   visible input in WebView2 but not in Edge IE mode for the tested input path, so it requires
   row-level review rather than implementation by inference.
+- External legacy-code research found real `window.event.keyCode` write patterns that the first
+  broad fixture did not isolate, especially Enter-to-Tab remapping and bundled suppression with
+  `returnValue=false` / `return false`. A focused companion fixture,
+  `keyboard-legacy-patterns.html`, now records only compact latest-result metrics for those
+  patterns and remains measurement-only.
 
 ## Phase 24: brown visual identity redesign
 

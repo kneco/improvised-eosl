@@ -207,6 +207,13 @@ keyboard shims. #46 and #48 remain research items; #47, #49, and the measured su
 tentative native-sufficient paths; #51 remains docs-only / rejected unless real target evidence
 appears.
 
+External legacy-code research after this pass found actual application/forum patterns that write
+`window.event.keyCode`, especially Enter-to-Tab remapping with `keyCode = 9` and suppression
+bundles that combine `keyCode = 0`, `returnValue=false`, and inline handler `return false`.
+Those patterns are narrower than generic writable event emulation but broader than the first #46
+measurement. `keyboard-legacy-patterns.html` exists to measure those focused patterns with compact
+visible outcomes instead of a full event-row log.
+
 ## Exit choices after measurement
 
 The measurement review must choose exactly one outcome:
