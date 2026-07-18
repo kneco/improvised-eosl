@@ -61,12 +61,11 @@
       <p class="hint">
         This focused page uses inline onkeydown because the external legacy examples most often
         use Web Forms or page-markup handlers. Suggested first pass: Field A + Enter. Compare
-        focus after tick, form submit fired, value length delta, document bubble, and keyCode
-        readback.
+        focus before/after tick, value length delta, document bubble, and keyCode readback.
       </p>
     </section>
 
-    <form id="test-form" class="panel" action="about:blank" method="get">
+    <section id="focus-probe" class="panel" aria-label="focus probe">
       <h2>test fields</h2>
       <div class="fields">
         <label>
@@ -82,8 +81,7 @@
           <input id="field-c" name="fieldC" value="" autocomplete="off" onkeydown="return legacyInlineKeydown(event)">
         </label>
       </div>
-      <button type="submit" style="position:absolute;left:-9999px;width:1px;height:1px;">submit</button>
-    </form>
+    </section>
 
     <section class="panel" aria-label="latest result">
       <h2>latest result</h2>
@@ -91,8 +89,8 @@
         <div id="metric-action" class="metric"><strong>action</strong><span>none</span></div>
         <div id="metric-keydown" class="metric"><strong>keydown</strong><span>none</span></div>
         <div id="metric-readback" class="metric"><strong>keyCode readback</strong><span>none</span></div>
+        <div id="metric-focus-before" class="metric"><strong>focus before</strong><span>none</span></div>
         <div id="metric-focus" class="metric"><strong>focus after tick</strong><span>none</span></div>
-        <div id="metric-submit" class="metric"><strong>form submit fired</strong><span>no</span></div>
         <div id="metric-input" class="metric"><strong>value length delta</strong><span>0</span></div>
         <div id="metric-bubble" class="metric"><strong>document bubble</strong><span>no</span></div>
         <div id="metric-late" class="metric"><strong>same-target late</strong><span>no</span></div>
@@ -103,7 +101,7 @@
         Report only the visible metrics above. The compact JSON below is optional when exact values
         are needed for an issue comment.
       </p>
-      <textarea id="compact-result" readonly></textarea>
+      <textarea id="compact-result" readonly tabindex="-1"></textarea>
     </section>
 
     <section class="panel" aria-label="environment">
@@ -126,7 +124,6 @@
       var actionMode = document.getElementById("action-mode");
       var resetButton = document.getElementById("reset-button");
       var copyButton = document.getElementById("copy-button");
-      var form = document.getElementById("test-form");
       var fields = [
         document.getElementById("field-a"),
         document.getElementById("field-b"),
@@ -136,8 +133,8 @@
         action: document.getElementById("metric-action"),
         keydown: document.getElementById("metric-keydown"),
         readback: document.getElementById("metric-readback"),
+        focusBefore: document.getElementById("metric-focus-before"),
         focus: document.getElementById("metric-focus"),
-        submit: document.getElementById("metric-submit"),
         input: document.getElementById("metric-input"),
         bubble: document.getElementById("metric-bubble"),
         late: document.getElementById("metric-late"),
@@ -154,7 +151,6 @@
           actionMode: actionMode ? actionMode.value : "none",
           activeBefore: activeId(),
           activeAfterTick: "",
-          submitFired: false,
           keydown: null,
           keypress: null,
           keyup: null,
@@ -404,8 +400,8 @@
         setMetric(metrics.action, actionMode.value + " / inline", "");
         setMetric(metrics.keydown, keySummary(keydown), keydown ? "ok" : "warn");
         setMetric(metrics.readback, readbackSummary(keydown), "");
+        setMetric(metrics.focusBefore, state.activeBefore, state.activeBefore === "field-a" ? "ok" : "warn");
         setMetric(metrics.focus, focusValue, focusValue === "field-b" ? "ok" : "");
-        setMetric(metrics.submit, state.submitFired ? "yes" : "no", state.submitFired ? "warn" : "ok");
         setMetric(metrics.input, deltaSummary(delta), delta.fieldA || delta.fieldB || delta.fieldC ? "warn" : "ok");
         setMetric(metrics.bubble, state.documentBubbleKeydown ? "yes" : "no", state.documentBubbleKeydown ? "warn" : "ok");
         setMetric(metrics.late, state.targetLateKeydown ? "yes" : "no", state.targetLateKeydown ? "ok" : "warn");
@@ -420,7 +416,6 @@
           userAgent: navigator.userAgent,
           activeBefore: state.activeBefore,
           activeAfterTick: state.activeAfterTick,
-          submitFired: state.submitFired,
           valueLengthDelta: delta,
           documentCaptureKeydown: state.documentCaptureKeydown,
           documentBubbleKeydown: state.documentBubbleKeydown,
@@ -458,13 +453,6 @@
           // Manual selection is enough when the clipboard command is unavailable.
         }
       }
-
-      form.onsubmit = function () {
-        state.submitFired = true;
-        scheduleAfterTick();
-        render();
-        return false;
-      };
 
       resetButton.onclick = reset;
       copyButton.onclick = copyResult;

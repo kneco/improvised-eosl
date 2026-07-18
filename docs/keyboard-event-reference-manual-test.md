@@ -171,7 +171,7 @@ Initial focused pass:
 2. Confirm `documentMode`, `compatMode`, and `userAgent` are visible in the environment section.
 3. Keep the default inline `onkeydown` handler source.
 4. For each action below, click `reset`, focus Field A, press Enter once, and record only:
-   `keydown`, `keyCode readback`, `focus after tick`, `form submit fired`, `value length delta`,
+   `keydown`, `keyCode readback`, `focus before`, `focus after tick`, `value length delta`,
    `document bubble`, `same-target late`, `keypress values`, and `window.event same`.
 
 Focused actions:
