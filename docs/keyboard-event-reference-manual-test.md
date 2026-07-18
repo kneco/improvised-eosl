@@ -140,6 +140,26 @@ define a new compatibility API permission, exact normalized HTTP(S) origin scope
 initial scope, reload requirement for allow/revoke, frame exclusion, no synthetic redispatch, no
 native key bridge, and diagnostics with no keylogging behavior.
 
+## 2026-07-18 first manual measurement summary
+
+User-assisted measurements were recorded in #46 through #52 with this fixture in WebView2 /
+Improvised EOSL and Microsoft Edge IE mode. The measured subset does not authorize a
+behavior-changing keyboard shim.
+
+| Issue | Measured subset | Current result |
+| --- | --- | --- |
+| #46 `event.keyCode = 0` | `property handler target` `keydown` letter `a`; `input target` visible input with letter `x` | Assignment executed, but same-handler and later-handler `keyCode` remained unchanged in both environments. Text input was still added in both environments. Continue research; do not assume universal cancellation. |
+| #47 `window.event` | `input target` `keydown` letter `e` | `window.event === event` was true in inline and document-bubble handlers in both environments. Tentative native sufficient for simple handler-time identity only. |
+| #48 `event.returnValue = false` | `input target` visible input with letter `y`; `preventDefault()` control with letter `z` | `returnValue=false` canceled visible input in WebView2 but not in Edge IE mode. `preventDefault()` canceled in both. Difference recorded, but no shim candidate until row-level and target-pattern evidence exists. |
+| #49 `event.cancelBubble = true` | `input target` `keydown` letter `c`; `stopPropagation()` control with letter `d` | Target handlers ran and `document-bubble / keydown` did not run in both environments. Tentative native sufficient for the measured input propagation path. |
+| #50 `keypress`, `charCode`, `which` | `input target` lowercase `f`, `Shift+F`, and `Enter` | WebView2 and Edge IE mode matched for all measured rows. Tentative native sufficient for the measured printable-letter and Enter inventory. |
+| #51 `keyIdentifier` | `input target` inventory and property descriptors | `keyIdentifier` was omitted from `before` rows and descriptor inventory reported `missing` in both environments. Treat as docs-only / reject unless target evidence appears. |
+| #52 aggregate gate | Child issue review after the measurements above | Do not implement a behavior-changing keyboard shim from the current evidence. Keep #52 open until the fixture PR and child issue classifications are reviewed. |
+
+Known gaps remain: non-editable focus reliability, same-target later listeners, additional keys
+such as Backspace/Delete/Tab/arrows/F1/Ctrl+F, handler-outside `window.event` lifetime,
+nested-dispatch behavior, IME/composition, and any real target-page dependency.
+
 ## Result notes
 
 ### Edge IE mode

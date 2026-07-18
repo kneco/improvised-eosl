@@ -184,6 +184,29 @@ WebView2:
 Results must separate JavaScript-visible values from final browser behavior. A single console log
 showing `keyCode` changed is not sufficient evidence.
 
+## Current measurement snapshot
+
+The first shared-fixture manual pass was recorded on 2026-07-18 in WebView2 / Improvised EOSL and
+Microsoft Edge IE mode. This pass is a measurement snapshot, not a compatibility contract:
+
+- `event.keyCode = 0` did not change same-handler or later-handler `keyCode` reads, and did not
+  stop measured editable input in either environment.
+- `window.event === event` was true during the measured inline and document-bubble `keydown`
+  handlers in both environments.
+- `event.returnValue = false` canceled measured visible input in WebView2 but not in Edge IE mode;
+  the `preventDefault()` control canceled input in both.
+- `event.cancelBubble = true` and `stopPropagation()` both prevented measured document-bubble
+  `keydown` propagation in both environments.
+- `keypress`, `charCode`, and `which` matched between WebView2 and Edge IE mode for measured
+  lowercase `f`, shifted `F`, and `Enter`.
+- `keyIdentifier` was missing from measured event snapshots and descriptor inventory in both
+  environments.
+
+The current aggregate gate result is to keep the fixture/docs path and avoid behavior-changing
+keyboard shims. #46 and #48 remain research items; #47, #49, and the measured subset of #50 are
+tentative native-sufficient paths; #51 remains docs-only / rejected unless real target evidence
+appears.
+
 ## Exit choices after measurement
 
 The measurement review must choose exactly one outcome:

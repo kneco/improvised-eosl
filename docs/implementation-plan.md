@@ -1179,6 +1179,14 @@ Status:
   `docs/keyboard-event-reference-manual-test.md` are available for Edge IE mode and WebView2
   measurement. The fixture is measurement-only and does not add production keyboard interception,
   a host bridge, script rewriting, or WebView2 security changes.
+- First user-assisted WebView2 and Edge IE mode measurements were recorded on 2026-07-18 in
+  #46 through #52. The current aggregate gate decision is no behavior-changing keyboard shim from
+  the available evidence.
+- Current child classification snapshot: #47, #49, and the measured subset of #50 are tentative
+  native-sufficient paths; #51 is docs-only / reject unless target evidence appears; #46 and #48
+  remain research items. #48 has a measured difference where `event.returnValue=false` canceled
+  visible input in WebView2 but not in Edge IE mode for the tested input path, so it requires
+  row-level review rather than implementation by inference.
 
 ## Phase 24: brown visual identity redesign
 
