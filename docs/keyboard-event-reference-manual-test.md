@@ -218,6 +218,10 @@ The focused results do not justify writable `keyCode` emulation for the Edge IE 
 inline `return false`, `preventDefault()`, explicit `.focus()`, or framework helpers before
 considering a shim.
 
+Function-key / browser-accelerator suppression is not concluded by this Enter-focused matrix.
+That product-critical question is split to #55 and should measure F1/F3/F5/F6/F10/F11/F12
+browser/host outcomes directly.
+
 ## 2026-07-18 first manual measurement summary
 
 User-assisted measurements were recorded in #46 through #52 with this fixture in WebView2 /

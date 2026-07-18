@@ -1198,6 +1198,9 @@ Status:
   `event.returnValue=false`, `event.preventDefault()`, and inline handler `return false`; focused
   `cancelBubble=true` propagation also matched. The remaining #48 risk is the earlier
   printable-input default-action difference, not the focused Enter path.
+- Ordinary / Enter-focused `keyCode` write behavior is split from function-key suppression:
+  #46 is closed for the measured ordinary/Enter scope, while #55 carries F1/F3/F5/F6/F10/F11/F12
+  browser-accelerator suppression as the product-critical Japanese enterprise-system path.
 
 ## Phase 24: brown visual identity redesign
 

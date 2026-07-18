@@ -233,6 +233,11 @@ lines in target code should be treated as possible IE6-8 residue until a current
 gap is shown. Active behavior is more likely to come from `returnValue=false`, inline
 `return false`, `preventDefault()`, explicit focus movement, or framework helpers.
 
+This conclusion is limited to ordinary / Enter-focused behavior. Function-key and browser
+accelerator suppression is split to #55 because Japanese enterprise systems may assign business
+operations to F1/F3/F5/F6/F10/F11/F12 or suppress browser-level behavior. That must be measured
+by final browser/host outcomes, not inferred from printable or Enter key paths.
+
 ## Exit choices after measurement
 
 The measurement review must choose exactly one outcome:
