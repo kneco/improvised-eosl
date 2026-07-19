@@ -60,6 +60,19 @@ against the current shell by confirming the gear/F1 hub opens diagnostics and th
 compatibility chip opens status detail; the version 1 `toolbar-diagnostics-command-hidden` policy
 key remains accepted only for existing policy-file compatibility.
 
+Issue #57 later added `functionKeyPolicy` for wrapper/browser function-key actions. Repeat
+function-key checks against the current shell by confirming F5, F6, F11, and F12 can be controlled
+individually without disabling WebView2 browser accelerator keys globally.
+
+Issue #57 function-key policy manual validation passed on 2026-07-19 from a normal user run:
+
+- Standard `functionKeyPolicy` mode allowed F5 reload, F6 address focus/select-all, F11 wrapper
+  fullscreen toggle, and F12 WebView2 DevTools.
+- Suppressed `functionKeyPolicy` mode blocked F5, F6, F11, and F12 while preserving the separate
+  `Ctrl+R` reload policy boundary.
+- Address-entry-hidden mode handled F6 without moving focus to hidden location UI.
+- `Ctrl+F` and `F3` remained available.
+
 Passed from an agent-launched PowerShell:
 
 - `--export-shell-policy <path>` exited with code 0 before WebView2 startup and wrote a standard
@@ -182,6 +195,106 @@ The current production path uses WPF routed-event handling and logs
 This does not claim the more precise WebView2 direct-controller
 `IsBrowserAcceleratorKeyEnabled=false` behavior.
 
+## Function-key browser action policy
+
+Issue #57 adds a separate `functionKeyPolicy` section for browser-like function-key actions that
+belong to the wrapper or WebView2 host. This policy is not an IE keyboard-event mutation shim and
+must not install page scripts, rewrite application JavaScript, or record typed field contents.
+
+Use this standard function-key policy first:
+
+```json
+{
+  "version": 1,
+  "browserShell": {
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": false,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
+  },
+  "functionKeyPolicy": {
+    "f5Reload": true,
+    "f6LocationFocus": true,
+    "f11Fullscreen": true,
+    "f12DevTools": true
+  }
+}
+```
+
+1. Start with `--shell-policy <path-to-policy> --show-diagnostics`.
+2. Confirm diagnostics record all four effective function-key policy values as enabled.
+3. Navigate to the built-in home or an ordinary HTTP(S) page.
+4. Press F5 and confirm reload occurs.
+5. Press F6 and confirm the wrapper address entry receives focus and selects the displayed URL.
+6. Press F11 and confirm wrapper fullscreen toggles on; press F11 again and confirm it restores.
+7. Press F12 and confirm WebView2 DevTools can open.
+8. Confirm `Ctrl+F` still opens WebView2 find-in-page and `F3` continues the find session.
+
+Then test targeted suppression with this policy:
+
+```json
+{
+  "version": 1,
+  "browserShell": {
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": false,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
+  },
+  "functionKeyPolicy": {
+    "f5Reload": false,
+    "f6LocationFocus": false,
+    "f11Fullscreen": false,
+    "f12DevTools": false
+  }
+}
+```
+
+1. Start with `--shell-policy <path-to-policy> --show-diagnostics`.
+2. Confirm diagnostics record all four effective function-key policy values as disabled.
+3. Press F5 and confirm F5 reload is suppressed.
+4. Press `Ctrl+R` and confirm reload still follows `keyboard-reload-command-disabled`, not
+   `functionKeyPolicy.f5Reload`.
+5. Press F6 and confirm the address entry does not receive focus.
+6. Press F11 and confirm wrapper fullscreen does not toggle.
+7. Press F12 and confirm DevTools does not open.
+8. Confirm `Ctrl+F` and `F3` still work.
+
+Finally test location precedence with this policy:
+
+```json
+{
+  "version": 1,
+  "browserShell": {
+    "toolbar-primary-toolbar-hidden": false,
+    "toolbar-address-entry-hidden": true,
+    "toolbar-history-command-hidden": false,
+    "toolbar-reload-command-hidden": false,
+    "toolbar-go-command-hidden": false,
+    "toolbar-settings-command-hidden": false,
+    "toolbar-diagnostics-command-hidden": false,
+    "keyboard-history-command-disabled": false,
+    "keyboard-reload-command-disabled": false
+  },
+  "functionKeyPolicy": {
+    "f6LocationFocus": true
+  }
+}
+```
+
+Confirm F6 is handled and logged as ignored because the address entry is unavailable. It must not
+move focus to hidden location UI or to browser chrome.
+
 ## Fail-safe policy handling
 
 For each case, start with `--shell-policy <path>` and confirm the standard visible shell is used
@@ -191,6 +304,7 @@ with a warning in the diagnostic log:
 - unsupported `version`;
 - unknown root property;
 - unknown `browserShell` property;
+- unknown `functionKeyPolicy` property;
 - non-boolean restriction value; and
 - file larger than the configured maximum.
 
@@ -230,3 +344,6 @@ The feature must not:
 The future Issue #24 accelerator policy must additionally preserve `Ctrl+F`/`F3` find-in-page and
 must not claim to block page script navigation, redirects, clicked links, form submission, typed
 address navigation, or origin changes.
+
+Function-key policy must additionally avoid generic keyboard-event mutation, arbitrary script
+rewriting, per-keystroke native bridges, and keylogging diagnostics.

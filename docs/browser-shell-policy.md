@@ -69,12 +69,19 @@ the policy file during normal browsing.
     "toolbar-diagnostics-command-hidden": false,
     "keyboard-history-command-disabled": false,
     "keyboard-reload-command-disabled": false
+  },
+  "functionKeyPolicy": {
+    "f5Reload": true,
+    "f6LocationFocus": true,
+    "f11Fullscreen": true,
+    "f12DevTools": true
   }
 }
 ```
 
-All values are JSON booleans. The template intentionally lists every key from the first version so
-administrators can read the policy as explicit "turn this restriction on/off" switches:
+All values are JSON booleans. The `browserShell` keys use existing version 1 "turn this
+restriction on/off" switches. The `functionKeyPolicy` keys default to normal browser-like behavior
+and use explicit `false` to suppress one wrapper/browser function-key action:
 
 | Key | `true` means | Scope |
 | --- | --- | --- |
@@ -87,11 +94,16 @@ administrators can read the policy as explicit "turn this restriction on/off" sw
 | `toolbar-diagnostics-command-hidden` | Accepted for schema version 1 compatibility. Diagnostics are now opened from the shell settings/help hub. | Deprecated toolbar presentation |
 | `keyboard-history-command-disabled` | Suppress targeted Back and Forward keyboard/browser accelerators. | Host/browser accelerator handling |
 | `keyboard-reload-command-disabled` | Suppress targeted Reload keyboard/browser accelerators. | Host/browser accelerator handling |
+| `functionKeyPolicy.f5Reload` | Allow F5 reload. Set `false` to suppress F5 reload only. | Function-key browser action |
+| `functionKeyPolicy.f6LocationFocus` | Allow F6 to focus/select the wrapper address entry when that entry is visible and focusable. Set `false` to suppress F6. | Function-key browser action |
+| `functionKeyPolicy.f11Fullscreen` | Allow F11 to toggle wrapper fullscreen. Set `false` to suppress F11 fullscreen. | Function-key browser action |
+| `functionKeyPolicy.f12DevTools` | Allow WebView2 DevTools access through F12 and other DevTools entry points. Set `false` to disable WebView2 DevTools for the run. | Function-key browser action |
 
 Rules:
 
 - Unknown root, section, or property names fail the file closed.
-- Missing optional command properties default to `false`.
+- Missing optional `browserShell` command properties default to `false`.
+- Missing optional `functionKeyPolicy` properties default to `true`.
 - `toolbar-primary-toolbar-hidden:true` hides the complete wrapper toolbar: Back, Forward, Reload,
   address entry, the embedded compatibility status chip, the Settings/help hub gear, and
   current-origin display.
@@ -118,8 +130,19 @@ Rules:
 - `keyboard-history-command-disabled` applies only to `Alt+Left`, `Alt+Right`, and dedicated
   browser Back / Forward keys when the host can observe them.
 - `keyboard-reload-command-disabled` applies only to `Ctrl+R` and `F5`.
+- `keyboard-reload-command-disabled:true` remains the broad reload accelerator restriction for
+  both `Ctrl+R` and `F5`. `functionKeyPolicy.f5Reload:false` suppresses only F5 and does not affect
+  `Ctrl+R`.
+- `functionKeyPolicy.f6LocationFocus:true` can focus only the wrapper address entry. If that entry
+  is hidden, disabled, or otherwise unavailable, F6 is handled by the host and logged as ignored
+  rather than escaping to hidden browser chrome.
+- `functionKeyPolicy.f11Fullscreen:true` is a wrapper fullscreen toggle. It is not kiosk mode, DLP,
+  or a security boundary.
+- `functionKeyPolicy.f12DevTools:false` uses WebView2's DevTools availability setting. It does not
+  disable browser accelerator keys globally and must not be implemented by setting
+  `AreBrowserAcceleratorKeysEnabled=false`.
 - Keyboard restriction keys do not control the F1 shell hub, `Ctrl+F`, `F3`, Backspace, text
-  editing, page movement keys, DevTools, print, zoom, or arbitrary page-defined shortcuts.
+  editing, page movement keys, print, zoom, or arbitrary page-defined shortcuts.
 - File size should use the existing 1 MiB configuration limit and JSON depth should remain bounded
   to 32.
 
@@ -189,6 +212,13 @@ The current find-in-page design deliberately keeps WebView2 browser accelerator 
 broad for Issue #24 because Microsoft documents it as disabling browser accelerators including
 Find on Page, Reload, print, zoom, DevTools, and special browser-function keys.
 
+Issue #57 keeps function-key browser actions as wrapper shell policy instead of IE keyboard-event
+mutation. The measured `window.event.keyCode = 0` pattern did not explain modern WebView2 / Edge IE
+mode function-key behavior. The supported implementation therefore handles only wrapper-owned or
+WebView2-exposed browser actions: F5 reload, F6 address focus, F11 wrapper fullscreen, and F12
+DevTools availability. It does not install a page shim, rewrite scripts, emulate writable
+`KeyboardEvent` objects, or log typed keys.
+
 The first production accelerator implementation uses the WPF `PreviewKeyDown` route and sets
 `KeyEventArgs.Handled = true` for targeted Back, Forward, and Reload commands when the matching
 `keyboard-...-disabled` policy key is true. This matches the stronger "host handled the key"
@@ -211,6 +241,11 @@ history-back navigation in the tested flow. The policy must log unsupported or u
 accelerator requests instead of implying broader enforcement. The pre-implementation evidence and
 candidate matrix are recorded in `docs/navigation-accelerator-research.md`; the baseline manual
 fixture and run checklist are recorded in `docs/navigation-accelerator-manual-test.md`.
+
+For function keys, F5 and F6 use the same targeted WPF routed-event handling path when the host
+observes the key. F11 is implemented as a wrapper window-state action. F12 is controlled through
+`CoreWebView2Settings.AreDevToolsEnabled` because DevTools is a WebView2 host capability rather
+than a page DOM compatibility behavior.
 
 Even with targeted accelerator suppression, the feature remains workflow guidance rather than a
 kiosk security boundary. It does not block page script navigation, redirects, clicked links,

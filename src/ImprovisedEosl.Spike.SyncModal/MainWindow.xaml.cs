@@ -82,6 +82,10 @@ public partial class MainWindow : Window
     private readonly List<(string Name, WindowOpenFeatureCapture Capture)> _windowOpenCaptures = [];
     private readonly HashSet<NewWindowObservationWindow> _modelessWindows = [];
     private WindowState _lastNonMinimizedWindowState = WindowState.Normal;
+    private bool _functionKeyFullscreenActive;
+    private WindowStyle _preFunctionKeyFullscreenWindowStyle;
+    private ResizeMode _preFunctionKeyFullscreenResizeMode;
+    private WindowState _preFunctionKeyFullscreenWindowState;
     private string _compatibilityStatusDetail = string.Empty;
 
     private sealed record PendingTopLevelHandoff(
@@ -287,7 +291,11 @@ public partial class MainWindow : Window
                 $"toolbarSettingsCommandHidden={load.Policy.ToolbarSettingsCommandHidden}; " +
                 $"toolbarDiagnosticsCommandHidden={load.Policy.ToolbarDiagnosticsCommandHidden}; " +
                 $"keyboardHistoryCommandDisabled={load.Policy.KeyboardHistoryCommandDisabled}; " +
-                $"keyboardReloadCommandDisabled={load.Policy.KeyboardReloadCommandDisabled}");
+                $"keyboardReloadCommandDisabled={load.Policy.KeyboardReloadCommandDisabled}; " +
+                $"functionF5ReloadEnabled={load.Policy.FunctionF5ReloadEnabled}; " +
+                $"functionF6LocationFocusEnabled={load.Policy.FunctionF6LocationFocusEnabled}; " +
+                $"functionF11FullscreenEnabled={load.Policy.FunctionF11FullscreenEnabled}; " +
+                $"functionF12DevToolsEnabled={load.Policy.FunctionF12DevToolsEnabled}");
         }
         else if (load.Diagnostics.Count == 0)
         {
@@ -674,6 +682,10 @@ public partial class MainWindow : Window
         webView.CoreWebView2.ProcessFailed += ParentWebView_ProcessFailed;
         webView.CoreWebView2.NewWindowRequested += ParentWebView_NewWindowRequested;
         webView.CoreWebView2.WindowCloseRequested += ParentWebView_WindowCloseRequested;
+        webView.CoreWebView2.Settings.AreDevToolsEnabled = _browserShellPolicy.FunctionF12DevToolsEnabled;
+        AppendLog(
+            "WebView2 DevTools policy applied: " +
+            $"areDevToolsEnabled={_browserShellPolicy.FunctionF12DevToolsEnabled}");
 
         var modalDialogHost = new ModalDialogHost(
             () => ParentWebView.Source,
@@ -1131,7 +1143,7 @@ public partial class MainWindow : Window
                 Keyboard.Modifiers,
                 out var command))
         {
-            if (ShouldSuppressNavigationAccelerator(command))
+            if (ShouldSuppressNavigationAccelerator(command, e.Key, e.SystemKey, Keyboard.Modifiers))
             {
                 e.Handled = true;
                 var source = _navigationAcceleratorWpfSuppressManualRun
@@ -1146,10 +1158,17 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (command == NavigationAcceleratorCommand.FocusAddress &&
-                TryFocusAddressBoxFromShortcut())
+            if (command == NavigationAcceleratorCommand.FocusAddress)
             {
                 e.Handled = true;
+                TryFocusAddressBoxFromShortcut();
+                return;
+            }
+
+            if (command == NavigationAcceleratorCommand.Fullscreen)
+            {
+                e.Handled = true;
+                ToggleFunctionKeyFullscreen();
                 return;
             }
         }
@@ -1163,15 +1182,34 @@ public partial class MainWindow : Window
         await OpenFindInPageAsync();
     }
 
-    private bool ShouldSuppressNavigationAccelerator(NavigationAcceleratorCommand command) =>
-        _navigationAcceleratorWpfSuppressManualRun ||
-        command switch
+    private bool ShouldSuppressNavigationAccelerator(
+        NavigationAcceleratorCommand command,
+        Key key,
+        Key systemKey,
+        ModifierKeys modifiers)
+    {
+        if (_navigationAcceleratorWpfSuppressManualRun)
+        {
+            return true;
+        }
+
+        var effectiveKey = key == Key.System ? systemKey : key;
+        return command switch
         {
             NavigationAcceleratorCommand.HistoryBack or NavigationAcceleratorCommand.HistoryForward =>
                 _browserShellPolicy.KeyboardHistoryCommandDisabled,
-            NavigationAcceleratorCommand.Reload => _browserShellPolicy.KeyboardReloadCommandDisabled,
+            NavigationAcceleratorCommand.Reload =>
+                _browserShellPolicy.KeyboardReloadCommandDisabled ||
+                (effectiveKey == Key.F5 &&
+                    modifiers == ModifierKeys.None &&
+                    !_browserShellPolicy.FunctionF5ReloadEnabled),
+            NavigationAcceleratorCommand.FocusAddress =>
+                !_browserShellPolicy.FunctionF6LocationFocusEnabled,
+            NavigationAcceleratorCommand.Fullscreen =>
+                !_browserShellPolicy.FunctionF11FullscreenEnabled,
             _ => false
         };
+    }
 
     private bool TryFocusAddressBoxFromShortcut()
     {
@@ -1185,6 +1223,35 @@ public partial class MainWindow : Window
         AddressBox.SelectAll();
         AppendLog("address focus shortcut selected address entry");
         return true;
+    }
+
+    private void ToggleFunctionKeyFullscreen()
+    {
+        if (_functionKeyFullscreenActive)
+        {
+            WindowStyle = _preFunctionKeyFullscreenWindowStyle;
+            ResizeMode = _preFunctionKeyFullscreenResizeMode;
+            WindowState = _preFunctionKeyFullscreenWindowState;
+            _functionKeyFullscreenActive = false;
+            AppendLog("function key fullscreen exited");
+            return;
+        }
+
+        _preFunctionKeyFullscreenWindowStyle = WindowStyle;
+        _preFunctionKeyFullscreenResizeMode = ResizeMode;
+        _preFunctionKeyFullscreenWindowState = WindowState == WindowState.Minimized
+            ? _lastNonMinimizedWindowState
+            : WindowState;
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        WindowStyle = WindowStyle.None;
+        ResizeMode = ResizeMode.NoResize;
+        WindowState = WindowState.Maximized;
+        _functionKeyFullscreenActive = true;
+        AppendLog("function key fullscreen entered");
     }
 
     private static string FormatKeyForLog(Key key, Key systemKey, ModifierKeys modifiers)

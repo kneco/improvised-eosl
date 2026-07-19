@@ -7,7 +7,8 @@ public enum NavigationAcceleratorCommand
     HistoryBack,
     HistoryForward,
     Reload,
-    FocusAddress
+    FocusAddress,
+    Fullscreen
 }
 
 public static class NavigationAcceleratorShortcutPolicy
@@ -62,6 +63,12 @@ public static class NavigationAcceleratorShortcutPolicy
             return true;
         }
 
+        if (effectiveKey == Key.F11 && modifiers == ModifierKeys.None)
+        {
+            command = NavigationAcceleratorCommand.Fullscreen;
+            return true;
+        }
+
         command = default;
         return false;
     }
@@ -72,6 +79,7 @@ public static class NavigationAcceleratorShortcutPolicy
         NavigationAcceleratorCommand.HistoryForward => "history-forward",
         NavigationAcceleratorCommand.Reload => "reload",
         NavigationAcceleratorCommand.FocusAddress => "focus-address",
+        NavigationAcceleratorCommand.Fullscreen => "fullscreen",
         _ => "unknown"
     };
 }

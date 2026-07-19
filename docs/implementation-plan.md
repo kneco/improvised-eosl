@@ -1531,3 +1531,61 @@ Implementation gate:
    recovery behavior.
 6. Build, run the test executable, run `git diff --check`, and complete manual smoke for F1,
    gear click, hub actions, and full-toolbar hidden recovery expectations.
+
+## Phase 29: function-key browser action shell policy
+
+Goal: resolve Issue #57 by moving product-critical function-key browser actions into the existing
+administrator JSON shell-policy boundary without treating them as IE keyboard-event mutation.
+
+Design decision:
+
+- Treat F5, F6, F11, and F12 as wrapper/browser-shell actions, not page DOM compatibility APIs.
+  The manual #55 measurements showed that `window.event.keyCode = 0` readback/mutation did not
+  explain the observed function-key suppression behavior in WebView2, Edge IE mode, or Chrome.
+- Add an optional top-level `functionKeyPolicy` section to schema version 1:
+  `f5Reload`, `f6LocationFocus`, `f11Fullscreen`, and `f12DevTools`.
+- Use modern-browser-like defaults: each function-key action defaults to `true`; explicit `false`
+  suppresses only that action.
+- Keep existing `keyboard-reload-command-disabled` as the broader reload accelerator restriction.
+  It still controls `Ctrl+R` and F5. `functionKeyPolicy.f5Reload:false` suppresses only F5 and
+  does not suppress `Ctrl+R`.
+- Give visible address UI priority for F6. If the wrapper address entry is visible and focusable,
+  F6 focuses it and selects the full URL. If the address entry is hidden or unavailable, F6 is
+  handled and logged as ignored instead of moving focus to hidden location UI or browser chrome.
+- Implement F11 as a wrapper-owned fullscreen toggle. This is not kiosk mode, DLP, native close
+  suppression, or an enterprise lockdown guarantee.
+- Implement F12 through `CoreWebView2Settings.AreDevToolsEnabled`. Do not use
+  `AreBrowserAcceleratorKeysEnabled=false`, because that broad setting would also affect find,
+  reload, print, zoom, and other browser accelerators.
+
+Security and compatibility boundary:
+
+- Do not install an IE keyboard-event mutation shim, rewrite application scripts, emulate writable
+  `KeyboardEvent` objects, add a per-keystroke native bridge, or log typed field contents.
+- Do not weaken WebView2 security, Chromium sandboxing, origin permission boundaries, or existing
+  `showModalDialog` / `window.open` compatibility permissions.
+- Keep function-key policy process-level and administrator-owned. It is not origin-scoped web
+  permission and web content cannot request, observe, or modify it.
+- Log only bounded command categories and effective policy state.
+
+Implementation gate:
+
+1. Extend the pure `BrowserShellPolicyStore` schema with optional `functionKeyPolicy` booleans,
+   missing-key defaults, template export, and fail-closed validation for unknown/non-boolean keys.
+2. Reuse targeted WPF routed-event handling for observable F5/F6/F11 function keys, preserving
+   `Ctrl+F` and `F3`.
+3. Apply F12 through WebView2's DevTools availability setting during WebView2 initialization.
+4. Update `docs/browser-shell-policy.md` and `docs/browser-shell-policy-manual-test.md` with the
+   policy matrix, F6 address precedence, F11/F12 host boundaries, and security exclusions.
+5. Build, run the test executable, run `git diff --check`, and complete normal-user manual smoke
+   for F5/F6/F11/F12 enabled/disabled cases.
+
+Status:
+
+- Implemented in the WPF shell as targeted wrapper/browser action policy. The change is
+  intentionally scoped to F5 reload, F6 address focus, F11 wrapper fullscreen, and F12 WebView2
+  DevTools availability and does not implement Issue #17 keyboard mutation.
+- Automated validation passed with the Debug build, the spike test executable, `dotnet test`, and
+  `git diff --check`.
+- Normal-user manual validation passed on 2026-07-19 for enabled function-key policy, disabled
+  function-key policy, hidden-address F6 precedence, and `Ctrl+F` / `F3` preservation.

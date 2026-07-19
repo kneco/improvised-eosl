@@ -13,7 +13,11 @@ public sealed record BrowserShellPolicy(
     bool ToolbarSettingsCommandHidden,
     bool ToolbarDiagnosticsCommandHidden,
     bool KeyboardHistoryCommandDisabled,
-    bool KeyboardReloadCommandDisabled)
+    bool KeyboardReloadCommandDisabled,
+    bool FunctionF5ReloadEnabled = true,
+    bool FunctionF6LocationFocusEnabled = true,
+    bool FunctionF11FullscreenEnabled = true,
+    bool FunctionF12DevToolsEnabled = true)
 {
     public static BrowserShellPolicy Standard { get; } = new(
         ToolbarPrimaryToolbarHidden: false,
@@ -24,7 +28,11 @@ public sealed record BrowserShellPolicy(
         ToolbarSettingsCommandHidden: false,
         ToolbarDiagnosticsCommandHidden: false,
         KeyboardHistoryCommandDisabled: false,
-        KeyboardReloadCommandDisabled: false);
+        KeyboardReloadCommandDisabled: false,
+        FunctionF5ReloadEnabled: true,
+        FunctionF6LocationFocusEnabled: true,
+        FunctionF11FullscreenEnabled: true,
+        FunctionF12DevToolsEnabled: true);
 }
 
 public sealed record BrowserShellPolicyLoadResult(
@@ -87,7 +95,12 @@ public sealed class BrowserShellPolicyStore
                 return Failure($"Unknown browserShell properties in browser shell policy file {_path}.");
             }
 
-            return new(ToPolicy(document.BrowserShell), Array.Empty<string>());
+            if (document.FunctionKeyPolicy?.Extra is { Count: > 0 })
+            {
+                return Failure($"Unknown functionKeyPolicy properties in browser shell policy file {_path}.");
+            }
+
+            return new(ToPolicy(document.BrowserShell, document.FunctionKeyPolicy), Array.Empty<string>());
         }
         catch (Exception ex) when (
             ex is IOException or UnauthorizedAccessException or JsonException or DecoderFallbackException)
@@ -106,7 +119,8 @@ public sealed class BrowserShellPolicyStore
         var document = new PolicyDocument
         {
             Version = CurrentVersion,
-            BrowserShell = BrowserShellSection.FromPolicy(policy)
+            BrowserShell = BrowserShellSection.FromPolicy(policy),
+            FunctionKeyPolicy = FunctionKeyPolicySection.FromPolicy(policy)
         };
 
         return JsonSerializer.Serialize(
@@ -172,7 +186,9 @@ public sealed class BrowserShellPolicyStore
         return (new UTF8Encoding(false, true).GetString(bytes, offset, total - offset), null);
     }
 
-    private static BrowserShellPolicy ToPolicy(BrowserShellSection section) => new(
+    private static BrowserShellPolicy ToPolicy(
+        BrowserShellSection section,
+        FunctionKeyPolicySection? functionKeyPolicy) => new(
         section.ToolbarPrimaryToolbarHidden,
         section.ToolbarAddressEntryHidden,
         section.ToolbarHistoryCommandHidden,
@@ -181,7 +197,11 @@ public sealed class BrowserShellPolicyStore
         section.ToolbarSettingsCommandHidden,
         section.ToolbarDiagnosticsCommandHidden,
         section.KeyboardHistoryCommandDisabled,
-        section.KeyboardReloadCommandDisabled);
+        section.KeyboardReloadCommandDisabled,
+        functionKeyPolicy?.F5Reload ?? true,
+        functionKeyPolicy?.F6LocationFocus ?? true,
+        functionKeyPolicy?.F11Fullscreen ?? true,
+        functionKeyPolicy?.F12DevTools ?? true);
 
     private static BrowserShellPolicyLoadResult Failure(string diagnostic) =>
         new(BrowserShellPolicy.Standard, new[] { diagnostic });
@@ -191,6 +211,8 @@ public sealed class BrowserShellPolicyStore
         public int Version { get; init; }
 
         public BrowserShellSection? BrowserShell { get; init; }
+
+        public FunctionKeyPolicySection? FunctionKeyPolicy { get; init; }
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement>? Extra { get; init; }
@@ -239,6 +261,28 @@ public sealed class BrowserShellPolicyStore
             ToolbarDiagnosticsCommandHidden = policy.ToolbarDiagnosticsCommandHidden,
             KeyboardHistoryCommandDisabled = policy.KeyboardHistoryCommandDisabled,
             KeyboardReloadCommandDisabled = policy.KeyboardReloadCommandDisabled
+        };
+    }
+
+    private sealed class FunctionKeyPolicySection
+    {
+        public bool? F5Reload { get; init; }
+
+        public bool? F6LocationFocus { get; init; }
+
+        public bool? F11Fullscreen { get; init; }
+
+        public bool? F12DevTools { get; init; }
+
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement>? Extra { get; init; }
+
+        public static FunctionKeyPolicySection FromPolicy(BrowserShellPolicy policy) => new()
+        {
+            F5Reload = policy.FunctionF5ReloadEnabled,
+            F6LocationFocus = policy.FunctionF6LocationFocusEnabled,
+            F11Fullscreen = policy.FunctionF11FullscreenEnabled,
+            F12DevTools = policy.FunctionF12DevToolsEnabled
         };
     }
 }
