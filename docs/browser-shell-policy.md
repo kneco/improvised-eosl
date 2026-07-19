@@ -17,9 +17,10 @@ operating-system permissions.
 This policy may control only two administrator-owned host surfaces:
 
 - primary wrapper toolbar visibility;
-- wrapper address entry visibility when the toolbar is visible;
+- wrapper address entry visibility, including the embedded compatibility status chip, when the
+  toolbar is visible;
 - wrapper back, forward, and reload command visibility when the toolbar is visible;
-- wrapper Settings and Diagnostics command visibility when the toolbar is visible; and
+- wrapper Settings/help hub visibility when the toolbar is visible; and
 - future host/browser accelerator handling for the same Back, Forward, and Reload command group.
 
 This policy must not:
@@ -78,12 +79,12 @@ administrators can read the policy as explicit "turn this restriction on/off" sw
 | Key | `true` means | Scope |
 | --- | --- | --- |
 | `toolbar-primary-toolbar-hidden` | Hide the complete primary wrapper toolbar. | Toolbar presentation |
-| `toolbar-address-entry-hidden` | Hide the editable address entry. | Toolbar presentation |
+| `toolbar-address-entry-hidden` | Hide the editable address entry and its embedded compatibility status chip. | Toolbar presentation |
 | `toolbar-history-command-hidden` | Hide Back and Forward wrapper commands. | Toolbar presentation |
 | `toolbar-reload-command-hidden` | Hide the Reload wrapper command. | Toolbar presentation |
 | `toolbar-go-command-hidden` | Accepted for schema version 1 compatibility. The current shell has no standalone Go button; typed-address navigation uses Enter in the address entry. | Deprecated toolbar presentation |
 | `toolbar-settings-command-hidden` | Hide the Settings wrapper command. | Toolbar presentation |
-| `toolbar-diagnostics-command-hidden` | Hide the Diagnostics wrapper command. | Toolbar presentation |
+| `toolbar-diagnostics-command-hidden` | Accepted for schema version 1 compatibility. Diagnostics are now opened from the shell settings/help hub. | Deprecated toolbar presentation |
 | `keyboard-history-command-disabled` | Suppress targeted Back and Forward keyboard/browser accelerators. | Host/browser accelerator handling |
 | `keyboard-reload-command-disabled` | Suppress targeted Reload keyboard/browser accelerators. | Host/browser accelerator handling |
 
@@ -92,7 +93,8 @@ Rules:
 - Unknown root, section, or property names fail the file closed.
 - Missing optional command properties default to `false`.
 - `toolbar-primary-toolbar-hidden:true` hides the complete wrapper toolbar: Back, Forward, Reload,
-  address entry, Settings, Diagnostics, compatibility status, and current-origin display.
+  address entry, the embedded compatibility status chip, the Settings/help hub gear, and
+  current-origin display.
 - The native window title bar and close affordance remain visible and OS-owned when
   `toolbar-primary-toolbar-hidden` is true.
 - If `toolbar-primary-toolbar-hidden` is true, individual toolbar command values are ignored and
@@ -100,6 +102,15 @@ Rules:
 - `toolbar-go-command-hidden` is retained so existing version 1 policy files continue to load and
   export. Setting it does not hide any additional current UI because the standalone Go button was
   removed after Issue #43.
+- The visible Settings command is the shell settings/help hub entry. Clicking the gear and pressing
+  F1 open the same wrapper-owned hub for application settings, compatibility status, and
+  diagnostics. This is shell UI behavior, not page-level IE `onhelp` emulation.
+- Compatibility status is a compact chip embedded inside the wrapper address entry, not a separate
+  toolbar command. It remains wrapper-owned chrome with tooltip and UI Automation detail; it does
+  not rewrite or expose page DOM.
+- `toolbar-diagnostics-command-hidden` is retained so existing version 1 policy files continue to
+  load and export. Setting it does not hide any additional current UI because the separate
+  Diagnostics toolbar button moved behind the shell hub after Issue #59.
 - Toolbar visibility and accelerator suppression are independent. Hiding Back, Forward, or Reload
   buttons must not silently suppress browser accelerators for those commands, and suppressing an
   accelerator must not change button visibility.
@@ -107,23 +118,23 @@ Rules:
 - `keyboard-history-command-disabled` applies only to `Alt+Left`, `Alt+Right`, and dedicated
   browser Back / Forward keys when the host can observe them.
 - `keyboard-reload-command-disabled` applies only to `Ctrl+R` and `F5`.
-- Keyboard restriction keys do not control `Ctrl+F`, `F3`, Backspace, text editing, page movement
-  keys, DevTools, print, zoom, or arbitrary page-defined shortcuts.
+- Keyboard restriction keys do not control the F1 shell hub, `Ctrl+F`, `F3`, Backspace, text
+  editing, page movement keys, DevTools, print, zoom, or arbitrary page-defined shortcuts.
 - File size should use the existing 1 MiB configuration limit and JSON depth should remain bounded
   to 32.
 
 Invalid JSON, unsupported versions, unknown properties, oversized files, and impossible command
 combinations must fail safe to the built-in standard shell and log a warning. The standard shell
-means the primary toolbar, address entry, browser commands, Settings, Diagnostics, compatibility
-status, and current origin are all visible. Typed-address navigation is available by pressing Enter
-in the address entry.
+means the primary toolbar, address entry, browser commands, Settings/help hub, compatibility
+status chip, and current origin are visible. Diagnostics remain reachable from the hub.
+Typed-address navigation is available by pressing Enter in the address entry.
 
 ## Full-toolbar hidden mode
 
 `toolbar-primary-toolbar-hidden:true` is allowed because many line-of-business deployments
 intentionally suppress Back, Forward, Reload, and direct address entry so operators stay inside the
-application workflow. In this mode the in-window origin and compatibility status controls are also
-hidden with the toolbar. That is an explicit operational tradeoff, not a security guarantee.
+application workflow. In this mode the in-window origin and embedded compatibility status chip are
+also hidden with the toolbar. That is an explicit operational tradeoff, not a security guarantee.
 
 Recovery from a bad full-toolbar policy is command-line based:
 
@@ -135,6 +146,8 @@ Recovery from a bad full-toolbar policy is command-line based:
 `--reset-user-settings` does not reset the administrator shell policy. It is a recovery path for
 ordinary user state only. Restoring a hidden toolbar requires replacing the policy file or launching
 with another policy path.
+F1 does not override `toolbar-primary-toolbar-hidden:true`; that mode intentionally hides the
+in-window shell entry points, so recovery remains command-line or administrator-policy based.
 
 ## Command-line operations
 
@@ -226,7 +239,8 @@ Shell policy is process-level host configuration, not origin-scoped page permiss
 3. Apply the presentation in WPF without changing compatibility policy, startup profile selection,
    WebView2 settings, local-content loading, or modal synchronization.
 4. Implement `toolbar-primary-toolbar-hidden:true` as a full toolbar hide, including address entry,
-   navigation commands, Settings, Diagnostics, compatibility status, and current-origin controls.
+   navigation commands, Settings/help hub gear, the embedded compatibility status chip, and
+   current-origin controls.
 5. Keep native close visible and verify command-line recovery before treating full-toolbar hidden
    mode as usable.
 6. Wire the Issue #24 accelerator keys to WPF routed-event suppression after pure policy tests

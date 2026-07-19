@@ -11,12 +11,12 @@ Browser shell policy manual validation passed on 2026-07-11.
 Passed from a normal user PowerShell:
 
 - Standard mode showed Back, Forward, Reload, editable address entry, Go, Settings, Diagnostics,
-  compatibility status, and current-origin display.
+  compatibility status, and current-origin display in the pre-Issue #59 toolbar shape.
 - Standard mode allowed ordinary HTTP(S) navigation.
 - Standard mode preserved `Ctrl+F` WebView2 find-in-page.
 - Restricted mode with `toolbar-primary-toolbar-hidden:true` hid the complete wrapper toolbar:
   Back, Forward, Reload, editable address entry, Go, Settings, Diagnostics, compatibility status,
-  and current-origin display.
+  and current-origin display in the pre-Issue #59 toolbar shape.
 - Restricted mode kept the native Windows title bar and close button visible.
 - Restricted-mode diagnostics recorded the explicit policy source, loaded policy, and toolbar
   restriction values including `toolbarPrimaryToolbarHidden=True`, `toolbarAddressEntryHidden=True`,
@@ -27,7 +27,7 @@ Passed from a normal user PowerShell:
   The toolbar was visible, diagnostics logged the unknown property warning, and presentation was
   applied with all shell controls visible.
 - Toolbar-hidden-only mode hid Back, Forward, and Reload buttons while keeping address entry, Go,
-  Settings, Diagnostics, and compatibility status visible.
+  Settings, Diagnostics, and compatibility status visible in the pre-Issue #59 toolbar shape.
 - Toolbar-hidden-only mode preserved `Ctrl+F` WebView2 find-in-page.
 - `F3` advanced to the next WebView2 find result and was not intercepted by wrapper policy or
   toolbar handling.
@@ -54,6 +54,12 @@ current shell by confirming typed-address navigation through Enter in the addres
 version 1 `toolbar-go-command-hidden` policy key remains accepted only for existing policy-file
 compatibility.
 
+Issue #59 later moved diagnostic access behind the Settings/help hub and moved compatibility
+status into the address entry as a compact wrapper-owned chip. Repeat visible-toolbar checks
+against the current shell by confirming the gear/F1 hub opens diagnostics and the embedded
+compatibility chip opens status detail; the version 1 `toolbar-diagnostics-command-hidden` policy
+key remains accepted only for existing policy-file compatibility.
+
 Passed from an agent-launched PowerShell:
 
 - `--export-shell-policy <path>` exited with code 0 before WebView2 startup and wrote a standard
@@ -77,12 +83,19 @@ PowerShell. Those UI portions were completed from a normal user PowerShell.
 ## Standard mode
 
 1. Start without `config/browser-shell-policy.json` and without `--shell-policy`.
-2. Confirm Back, Forward, Reload, editable address entry, Settings, Diagnostics,
-   compatibility status, and current origin are visible.
+2. Confirm Back, Forward, Reload, editable address entry, the embedded compatibility status chip,
+   the Settings/help gear, and current origin are visible.
 3. Confirm ordinary HTTP(S) navigation works by typing an address and pressing Enter.
 4. Confirm focusing the address entry by mouse or keyboard selects the complete displayed URL.
 5. Confirm clicking the already-focused address entry allows caret placement or partial editing.
-6. Confirm `Ctrl+F` still opens WebView2 find-in-page.
+6. Confirm the embedded compatibility chip shows visible text and a state color, exposes tooltip
+   detail, and opens the compatibility detail window when clicked.
+7. Confirm pressing F1 opens the Improvised EOSL settings/help hub.
+8. Confirm clicking the toolbar gear opens the same hub.
+9. From the hub, confirm Application settings, Compatibility status, and Diagnostics remain
+   reachable.
+10. Confirm the hub can toggle Diagnostics on and off.
+11. Confirm `Ctrl+F` still opens WebView2 find-in-page.
 
 ## Restricted mode
 
@@ -106,11 +119,13 @@ Use a policy that hides the complete primary toolbar:
 ```
 
 1. Start with `--shell-policy <path-to-policy>`.
-2. Confirm Back/Forward/Reload, editable address entry, Settings, Diagnostics, compatibility
-   status, and current-origin controls are all hidden.
+2. Confirm Back/Forward/Reload, editable address entry, embedded compatibility status chip,
+   Settings/help gear, and current-origin controls are all hidden.
 3. Confirm the native Windows title bar and close button remain visible.
 4. Confirm ordinary in-page application workflow still works.
-5. Confirm the diagnostic log records the loaded policy path, `toolbar-primary-toolbar-hidden:true`,
+5. Confirm F1 does not expose a hidden in-window toolbar/hub recovery path in this full-toolbar
+   hidden mode; recovery remains command-line or policy replacement.
+6. Confirm the diagnostic log records the loaded policy path, `toolbar-primary-toolbar-hidden:true`,
    and ignored child command values.
 
 ## Navigation accelerator suppression

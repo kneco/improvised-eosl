@@ -1282,9 +1282,10 @@ Design decision:
   oversized files, and impossible command combinations fall back to the standard visible shell and
   log a warning.
 - Allow `toolbar-primary-toolbar-hidden:true` to hide the full wrapper toolbar, including Back,
-  Forward, Reload, address entry, Settings, Diagnostics, compatibility status, and
-  current-origin controls. This matches line-of-business operation where browser-like escape paths
-  are intentionally suppressed.
+  Forward, Reload, address entry, Settings/help hub gear, compatibility status, and current-origin
+  controls. Diagnostics are reachable from the Settings/help hub when the hub itself is visible.
+  This matches line-of-business operation where browser-like escape paths are intentionally
+  suppressed.
 - Treat full-toolbar hidden mode as an operational tradeoff, not a trust UI or security boundary.
   Origin and compatibility status are not visible while the toolbar is hidden; recovery is through
   command-line policy replacement or a known-good `--shell-policy` path.
@@ -1468,10 +1469,11 @@ Design decision:
 - Remove the standalone Go/address-navigation button and its unused page/enter geometry from the
   WPF toolbar. This follows the current Edge-style expectation that the location field itself owns
   typed navigation.
-- Keep Back, Forward, Reload, Settings, Diagnostics, and compatibility status as visible toolbar
-  commands in the standard shell.
-- Keep compatibility status immediately after the address field. It must remain visible text plus
-  icon, tooltip, and UI Automation text; it must not move inside the editable URL field.
+- Keep Back, Forward, Reload, and the Settings/help gear as visible toolbar commands in the
+  standard shell. Diagnostic access is available from the Settings/help hub.
+- Keep compatibility status visible inside the address entry as a compact wrapper-owned chip. It
+  must remain visible text plus icon, tooltip, and UI Automation text; it must not become part of
+  the editable URL string or page DOM.
 - Preserve the schema version 1 `toolbar-go-command-hidden` key for existing policy files and
   template export. The key is now a deprecated compatibility no-op because there is no current Go
   command to hide.
@@ -1497,3 +1499,35 @@ Status:
 - `toolbar-go-command-hidden` remains parsed, logged, saved, and exported for schema version 1
   compatibility. Setting it records a presentation-normalization diagnostic but does not affect
   visible UI.
+
+## Phase 28: F1 and gear shell settings/help hub
+
+Goal: resolve Issue #59 by giving the wrapper a single shell-owned settings/help entry point
+without adding page-level IE keyboard or `onhelp` compatibility.
+
+Design decision:
+
+- F1 is a wrapper-owned shell shortcut that opens the same settings/help hub as the toolbar gear.
+- The hub links to existing surfaces only: application settings, compatibility status detail, and
+  diagnostics visibility. The standalone Diagnostics toolbar button is removed because the hub is
+  now the shell entry point for diagnostic access.
+- Compatibility status remains visible outside the hub as a compact chip embedded in the wrapper
+  address entry. Clicking the chip opens the existing compatibility detail window. Hiding the
+  address entry also hides the embedded chip.
+- The toolbar gear remains the visible entry point in normal toolbar presentation. Full-toolbar
+  hidden mode remains an explicit policy tradeoff and does not get an F1 escape hatch; documented
+  command-line and policy replacement recovery still apply.
+- This phase does not implement Issue #57 function-key JSON policy, arbitrary page keyboard
+  mutation, WebView2 security changes, page `onhelp` emulation, or per-keystroke diagnostics.
+
+Implementation gate:
+
+1. Add a bounded F1 shortcut classifier and unit tests.
+2. Add a small shell hub window that invokes existing settings/status/diagnostics flows.
+3. Wire toolbar gear and F1 to the same hub.
+4. Embed the compatibility status detail entry as an address-entry chip while preserving visible
+   state text, state color, tooltip detail, and UI Automation detail.
+5. Update shell policy docs/manual tests to record the hub boundary, embedded status boundary, and
+   recovery behavior.
+6. Build, run the test executable, run `git diff --check`, and complete manual smoke for F1,
+   gear click, hub actions, and full-toolbar hidden recovery expectations.

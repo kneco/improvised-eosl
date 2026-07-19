@@ -77,6 +77,7 @@ var tests = new (string Name, Action Body)[]
     ("rejects conflicting portable settings", RejectsConflictingPortableSettings),
     ("rejects configured fields in portable settings", RejectsConfiguredFieldsInPortableSettings),
     ("formats main window title from document title", FormatsMainWindowTitleFromDocumentTitle),
+    ("recognizes shell hub shortcut", RecognizesShellHubShortcut),
     ("recognizes browser find shortcut", RecognizesBrowserFindShortcut),
     ("recognizes navigation accelerator shortcuts", RecognizesNavigationAcceleratorShortcuts),
     ("converts native window colors to COLORREF", ConvertsNativeWindowColorsToColorRef),
@@ -120,6 +121,14 @@ static void FormatsMainWindowTitleFromDocumentTitle()
     Equal("Improvised EOSL", MainWindowTitlePolicy.Format("Improvised EOSL"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("Legacy Order Entry"));
     Equal("Legacy Order Entry - Improvised EOSL", MainWindowTitlePolicy.Format("  Legacy Order Entry  "));
+}
+
+static void RecognizesShellHubShortcut()
+{
+    Equal(true, ShellHubShortcutPolicy.IsShellHubShortcut(Key.F1, Key.None, ModifierKeys.None));
+    Equal(false, ShellHubShortcutPolicy.IsShellHubShortcut(Key.F1, Key.None, ModifierKeys.Shift));
+    Equal(false, ShellHubShortcutPolicy.IsShellHubShortcut(Key.System, Key.F1, ModifierKeys.Alt));
+    Equal(false, ShellHubShortcutPolicy.IsShellHubShortcut(Key.F2, Key.None, ModifierKeys.None));
 }
 
 static void RecognizesBrowserFindShortcut()
@@ -1300,7 +1309,7 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
             HistoryCommandVisible: true,
             ReloadCommandVisible: true,
             SettingsCommandVisible: true,
-            DiagnosticsCommandVisible: true,
+            DiagnosticsCommandVisible: false,
             CompatibilityStatusVisible: true),
         standard.Presentation);
 
@@ -1313,6 +1322,7 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
     Equal(0, addressHidden.Diagnostics.Count);
     Equal(true, addressHidden.Presentation.PrimaryToolbarVisible);
     Equal(false, addressHidden.Presentation.AddressEntryVisible);
+    Equal(false, addressHidden.Presentation.CompatibilityStatusVisible);
     Equal(true, addressHidden.Presentation.HistoryCommandVisible);
 
     var goHidden = BrowserShellPresentationPolicy.Resolve(
@@ -1323,6 +1333,14 @@ static void MapsBrowserShellPolicyToToolbarPresentation()
     Equal(1, goHidden.Diagnostics.Count);
     Equal(true, goHidden.Presentation.AddressEntryVisible);
     Equal(true, goHidden.Presentation.HistoryCommandVisible);
+
+    var diagnosticsHidden = BrowserShellPresentationPolicy.Resolve(
+        BrowserShellPolicy.Standard with
+        {
+            ToolbarDiagnosticsCommandHidden = true
+        });
+    Equal(1, diagnosticsHidden.Diagnostics.Count);
+    Equal(false, diagnosticsHidden.Presentation.DiagnosticsCommandVisible);
 
     var restricted = BrowserShellPresentationPolicy.Resolve(
         BrowserShellPolicy.Standard with

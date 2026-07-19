@@ -5,6 +5,13 @@ namespace ImprovisedEosl.Spike.SyncModal;
 public static class UiText
 {
     public const string ApplicationSettingsButton = nameof(ApplicationSettingsButton);
+    public const string ShellHubButton = nameof(ShellHubButton);
+    public const string ShellHubTitle = nameof(ShellHubTitle);
+    public const string ShellHubIntro = nameof(ShellHubIntro);
+    public const string ShellHubApplicationSettings = nameof(ShellHubApplicationSettings);
+    public const string ShellHubApplicationSettingsDescription = nameof(ShellHubApplicationSettingsDescription);
+    public const string ShellHubCompatibilityStatus = nameof(ShellHubCompatibilityStatus);
+    public const string ShellHubDiagnosticsDescription = nameof(ShellHubDiagnosticsDescription);
     public const string ApplicationSettingsTitle = nameof(ApplicationSettingsTitle);
     public const string ApplicationSettingsIntro = nameof(ApplicationSettingsIntro);
     public const string InitialUrlLabel = nameof(InitialUrlLabel);
@@ -78,6 +85,13 @@ public static class UiText
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>
     {
         [ApplicationSettingsButton] = "Settings",
+        [ShellHubButton] = "Settings and help",
+        [ShellHubTitle] = "Settings and help",
+        [ShellHubIntro] = "Open wrapper settings, compatibility status, and diagnostics for Improvised EOSL.",
+        [ShellHubApplicationSettings] = "Application settings",
+        [ShellHubApplicationSettingsDescription] = "Manage the next-launch page and user compatibility decisions.",
+        [ShellHubCompatibilityStatus] = "Compatibility status",
+        [ShellHubDiagnosticsDescription] = "Show or hide the diagnostic log. Diagnostics do not record typed page contents.",
         [ApplicationSettingsTitle] = "Settings",
         [ApplicationSettingsIntro] = "Manage the next-launch page and user decisions for legacy compatibility. Trusted configured profiles are separate and cannot be changed here.",
         [InitialUrlLabel] = "Initial URL (HTTP or HTTPS)",
