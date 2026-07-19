@@ -171,6 +171,15 @@ static void RecognizesNavigationAcceleratorShortcuts()
     Equal(
         true,
         NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.F6,
+            Key.None,
+            ModifierKeys.None,
+            out var f6Command));
+    Equal(NavigationAcceleratorCommand.FocusAddress, f6Command);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
             Key.BrowserBack,
             Key.None,
             ModifierKeys.None,
@@ -203,6 +212,7 @@ static void RecognizesNavigationAcceleratorShortcuts()
     Equal("history-back", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.HistoryBack));
     Equal("history-forward", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.HistoryForward));
     Equal("reload", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.Reload));
+    Equal("focus-address", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.FocusAddress));
 }
 
 static void ConvertsNativeWindowColorsToColorRef()

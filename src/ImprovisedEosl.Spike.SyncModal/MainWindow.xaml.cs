@@ -1068,26 +1068,51 @@ public partial class MainWindow : Window
         }
     }
 
+    private void AddressBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        AddressBox.SelectAll();
+    }
+
+    private void AddressBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (AddressBox.IsKeyboardFocusWithin)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        AddressBox.Focus();
+    }
+
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (NavigationAcceleratorShortcutPolicy.TryGetCommand(
                 e.Key,
                 e.SystemKey,
                 Keyboard.Modifiers,
-                out var command) &&
-            ShouldSuppressNavigationAccelerator(command))
+                out var command))
         {
-            e.Handled = true;
-            var source = _navigationAcceleratorWpfSuppressManualRun
-                ? "manual"
-                : "policy";
-            AppendLog(
-                "navigation accelerator WPF suppression: " +
-                $"source={source}; " +
-                $"command={NavigationAcceleratorShortcutPolicy.FormatCommand(command)}; " +
-                $"key={FormatKeyForLog(e.Key, e.SystemKey, Keyboard.Modifiers)}; " +
-                $"repeat={e.IsRepeat}; handled=true");
-            return;
+            if (ShouldSuppressNavigationAccelerator(command))
+            {
+                e.Handled = true;
+                var source = _navigationAcceleratorWpfSuppressManualRun
+                    ? "manual"
+                    : "policy";
+                AppendLog(
+                    "navigation accelerator WPF suppression: " +
+                    $"source={source}; " +
+                    $"command={NavigationAcceleratorShortcutPolicy.FormatCommand(command)}; " +
+                    $"key={FormatKeyForLog(e.Key, e.SystemKey, Keyboard.Modifiers)}; " +
+                    $"repeat={e.IsRepeat}; handled=true");
+                return;
+            }
+
+            if (command == NavigationAcceleratorCommand.FocusAddress &&
+                TryFocusAddressBoxFromShortcut())
+            {
+                e.Handled = true;
+                return;
+            }
         }
 
         if (!BrowserFindShortcutPolicy.IsFindShortcut(e.Key, Keyboard.Modifiers))
@@ -1108,6 +1133,20 @@ public partial class MainWindow : Window
             NavigationAcceleratorCommand.Reload => _browserShellPolicy.KeyboardReloadCommandDisabled,
             _ => false
         };
+
+    private bool TryFocusAddressBoxFromShortcut()
+    {
+        if (!AddressBox.IsVisible || !AddressBox.IsEnabled || !AddressBox.Focusable)
+        {
+            AppendLog("address focus shortcut ignored because address entry is unavailable");
+            return false;
+        }
+
+        AddressBox.Focus();
+        AddressBox.SelectAll();
+        AppendLog("address focus shortcut selected address entry");
+        return true;
+    }
 
     private static string FormatKeyForLog(Key key, Key systemKey, ModifierKeys modifiers)
     {

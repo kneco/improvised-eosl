@@ -6,7 +6,8 @@ public enum NavigationAcceleratorCommand
 {
     HistoryBack,
     HistoryForward,
-    Reload
+    Reload,
+    FocusAddress
 }
 
 public static class NavigationAcceleratorShortcutPolicy
@@ -55,6 +56,12 @@ public static class NavigationAcceleratorShortcutPolicy
             return true;
         }
 
+        if (effectiveKey == Key.F6 && modifiers == ModifierKeys.None)
+        {
+            command = NavigationAcceleratorCommand.FocusAddress;
+            return true;
+        }
+
         command = default;
         return false;
     }
@@ -64,6 +71,7 @@ public static class NavigationAcceleratorShortcutPolicy
         NavigationAcceleratorCommand.HistoryBack => "history-back",
         NavigationAcceleratorCommand.HistoryForward => "history-forward",
         NavigationAcceleratorCommand.Reload => "reload",
+        NavigationAcceleratorCommand.FocusAddress => "focus-address",
         _ => "unknown"
     };
 }
