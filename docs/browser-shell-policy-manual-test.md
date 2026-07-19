@@ -80,7 +80,9 @@ PowerShell. Those UI portions were completed from a normal user PowerShell.
 2. Confirm Back, Forward, Reload, editable address entry, Settings, Diagnostics,
    compatibility status, and current origin are visible.
 3. Confirm ordinary HTTP(S) navigation works by typing an address and pressing Enter.
-4. Confirm `Ctrl+F` still opens WebView2 find-in-page.
+4. Confirm focusing the address entry by mouse or keyboard selects the complete displayed URL.
+5. Confirm clicking the already-focused address entry allows caret placement or partial editing.
+6. Confirm `Ctrl+F` still opens WebView2 find-in-page.
 
 ## Restricted mode
 
