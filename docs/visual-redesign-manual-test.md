@@ -23,14 +23,14 @@ Passed in the current user session on 2026-07-10:
   Windows title bar and caption buttons;
 - the diagnostic log recorded successful DWM frame tint application for border, caption, and text;
 - Back and Forward rendered as disabled at startup while Reload, address navigation, Settings,
-  Diagnostics, and the compatibility status remained enabled;
+  Diagnostics, and the compatibility status remained enabled in the pre-Issue #59 toolbar shape;
 - Forward and the then-present address navigation button were visually distinct: Forward used the
   browser-history arrow, while address navigation used the page/enter-style mark;
 - the compatibility status retained its visible short text and complete UI Automation name,
   including origin plus enabled, denied, and detected API lists;
 - the compatibility detail window opened and displayed the same complete origin/API detail;
 - at a 760 pixel window width, the address field, Go, compatibility status, Settings, and
-  Diagnostics controls did not overlap; and
+  Diagnostics controls did not overlap in the pre-Issue #59 toolbar shape; and
 - the published executable exposed the brown embedded application icon.
 - Debug `--auto` smoke still exited with code `0` after native frame tinting was added;
 - Release package publishing and distribution layout validation still passed.
@@ -71,8 +71,8 @@ Use the built-in home page and at least one ordinary HTTP(S) site.
 
 ## Browser Commands
 
-1. Confirm Back, Forward, Reload, Settings, Diagnostics, and compatibility status icons use the
-   brown command palette.
+1. Confirm Back, Forward, Reload, and Settings/help icons use the brown command palette, and the
+   embedded compatibility chip remains visually distinct inside the address entry.
 2. Confirm typed-address navigation works by pressing Enter in the address field. The standalone
    Go/address navigation button was removed after Issue #43.
 3. Confirm disabled Back/Forward states remain visibly disabled without relying only on color.
@@ -80,8 +80,10 @@ Use the built-in home page and at least one ordinary HTTP(S) site.
 
 ## Status And Accessibility
 
-1. Confirm the compatibility status text remains visible next to its icon.
-2. Confirm status meaning remains available through icon shape and short text, not color alone.
+1. Confirm the compatibility status chip text remains visible next to its icon inside the address
+   entry.
+2. Confirm status meaning remains available through icon shape, short text, tooltip, and UI
+   Automation detail, not color alone.
 3. Open the compatibility detail window and confirm the complete origin/API detail is unchanged.
 4. Check Windows high contrast and light/dark themes. The UI may keep its product palette, but text,
    icon strokes, focus indication, and hover states must remain readable.

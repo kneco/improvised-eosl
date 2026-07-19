@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using ImprovisedEosl.Core;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -138,10 +139,9 @@ public partial class MainWindow : Window
             Environment.ExitCode = 1;
         }
         _showDiagnosticsAtStartup = args.Any(arg => arg.Equals("--show-diagnostics", StringComparison.OrdinalIgnoreCase));
-        var applicationSettingsText = UiText.Get(UiText.ApplicationSettingsButton);
-        ApplicationSettingsText.Text = applicationSettingsText;
-        ApplicationSettingsButton.ToolTip = applicationSettingsText;
-        AutomationProperties.SetName(ApplicationSettingsButton, applicationSettingsText);
+        var shellHubText = UiText.Get(UiText.ShellHubButton);
+        ApplicationSettingsButton.ToolTip = shellHubText;
+        AutomationProperties.SetName(ApplicationSettingsButton, shellHubText);
         SetDiagnosticsVisibility(_showDiagnosticsAtStartup);
         _fileLog = new RollingFileLog(
             Path.Combine(AppContext.BaseDirectory, "artifacts", "sync-modal-poc.log"));
@@ -315,13 +315,13 @@ public partial class MainWindow : Window
 
         var presentation = result.Presentation;
         PrimaryToolbar.Visibility = ToVisibility(presentation.PrimaryToolbarVisible);
-        AddressBox.Visibility = ToVisibility(presentation.AddressEntryVisible);
+        AddressEntryHost.Visibility = ToVisibility(presentation.AddressEntryVisible);
         BackButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
         ForwardButton.Visibility = ToVisibility(presentation.HistoryCommandVisible);
         ReloadButton.Visibility = ToVisibility(presentation.ReloadCommandVisible);
         ApplicationSettingsButton.Visibility = ToVisibility(presentation.SettingsCommandVisible);
-        DiagnosticsButton.Visibility = ToVisibility(presentation.DiagnosticsCommandVisible);
-        CompatibilityStatusButton.Visibility = ToVisibility(presentation.CompatibilityStatusVisible);
+        CompatibilityStatusButton.Visibility = ToVisibility(
+            presentation.AddressEntryVisible && presentation.CompatibilityStatusVisible);
         AppendLog(
             "applied browser shell presentation: " +
             $"primaryToolbarVisible={presentation.PrimaryToolbarVisible}; " +
@@ -943,7 +943,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Diagnostics_Click(object sender, RoutedEventArgs e)
+    private void ToggleDiagnosticsVisibility()
     {
         SetDiagnosticsVisibility(!_diagnosticsVisible);
         AppendLog($"diagnostic panel visibility changed: visible={_diagnosticsVisible}");
@@ -954,13 +954,45 @@ public partial class MainWindow : Window
         _diagnosticsVisible = visible;
         DiagnosticsRow.Height = visible ? new GridLength(180) : new GridLength(0);
         LogBox.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        var diagnosticsText = UiText.Get(visible ? UiText.DiagnosticsHide : UiText.DiagnosticsShow);
-        DiagnosticsText.Text = diagnosticsText;
-        DiagnosticsButton.ToolTip = diagnosticsText;
-        AutomationProperties.SetName(DiagnosticsButton, diagnosticsText);
     }
 
-    private void ApplicationSettings_Click(object sender, RoutedEventArgs e)
+    private void ShellHub_Click(object sender, RoutedEventArgs e)
+    {
+        OpenShellHub("toolbar");
+    }
+
+    private void OpenShellHub(string source)
+    {
+        var dialog = new ShellHubWindow(
+            _browserSettingsStore is not null,
+            _diagnosticsVisible,
+            _compatibilityStatusDetail)
+        {
+            Owner = this
+        };
+        dialog.ActionRequested += (_, args) =>
+        {
+            switch (args.Action)
+            {
+                case ShellHubAction.ApplicationSettings:
+                    OpenApplicationSettings();
+                    break;
+                case ShellHubAction.CompatibilityStatus:
+                    OpenCompatibilityStatusDetail();
+                    break;
+                case ShellHubAction.ToggleDiagnostics:
+                    ToggleDiagnosticsVisibility();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(args.Action), args.Action, "Unknown shell hub action");
+            }
+        };
+
+        AppendLog($"shell hub opened: source={source}");
+        dialog.ShowDialog();
+    }
+
+    private void OpenApplicationSettings()
     {
         if (_browserSettingsStore is null)
         {
@@ -1086,6 +1118,13 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (ShellHubShortcutPolicy.IsShellHubShortcut(e.Key, e.SystemKey, Keyboard.Modifiers))
+        {
+            e.Handled = true;
+            OpenShellHub("f1");
+            return;
+        }
+
         if (NavigationAcceleratorShortcutPolicy.TryGetCommand(
                 e.Key,
                 e.SystemKey,
@@ -1945,12 +1984,45 @@ public partial class MainWindow : Window
 
     private void SetCompatibilityStatusPresentation(CompatibilityStatusPresentation presentation)
     {
-        CompatibilityStatusText.Text = presentation.ShortLabel;
+        CompatibilityStatusText.Text = CreateCompactCompatibilityStatusLabel(presentation.ShortLabel);
         CompatibilityStatusIconPath.Data = FindResource(GetCompatibilityStatusGeometryKey(presentation.Icon)) as System.Windows.Media.Geometry;
+        ApplyCompatibilityStatusChipColors(presentation.Icon);
         CompatibilityStatusButton.ToolTip = presentation.DetailText;
         AutomationProperties.SetName(CompatibilityStatusButton, presentation.AccessibleText);
         _compatibilityStatusDetail = presentation.DetailText;
     }
+
+    private static string CreateCompactCompatibilityStatusLabel(string shortLabel) =>
+        shortLabel
+            .Replace("Compatibility: ", "Compat: ", StringComparison.Ordinal)
+            .Replace("互換: ", "互換:", StringComparison.Ordinal);
+
+    private void ApplyCompatibilityStatusChipColors(CompatibilityStatusIcon icon)
+    {
+        if (SystemParameters.HighContrast)
+        {
+            CompatibilityStatusButton.Background = SystemColors.ControlBrush;
+            CompatibilityStatusButton.BorderBrush = SystemColors.ControlTextBrush;
+            CompatibilityStatusButton.Foreground = SystemColors.ControlTextBrush;
+            return;
+        }
+
+        var (background, border, foreground) = icon switch
+        {
+            CompatibilityStatusIcon.Enabled => ("#E7F6EC", "#2F8F46", "#155B2A"),
+            CompatibilityStatusIcon.DetectionPending => ("#FFF7DF", "#C99A2E", "#6D4A00"),
+            CompatibilityStatusIcon.Denied or CompatibilityStatusIcon.Blocked or CompatibilityStatusIcon.Error =>
+                ("#FBEAEA", "#B94A48", "#7A2421"),
+            _ => ("#F3F4F6", "#A8ADB5", "#4B5563")
+        };
+
+        CompatibilityStatusButton.Background = CreateBrush(background);
+        CompatibilityStatusButton.BorderBrush = CreateBrush(border);
+        CompatibilityStatusButton.Foreground = CreateBrush(foreground);
+    }
+
+    private static SolidColorBrush CreateBrush(string color) =>
+        new((Color)ColorConverter.ConvertFromString(color));
 
     private static string GetCompatibilityStatusGeometryKey(CompatibilityStatusIcon icon) => icon switch
     {
@@ -1965,6 +2037,11 @@ public partial class MainWindow : Window
     };
 
     private void CompatibilityStatus_Click(object sender, RoutedEventArgs e)
+    {
+        OpenCompatibilityStatusDetail();
+    }
+
+    private void OpenCompatibilityStatusDetail()
     {
         var detailWindow = new CompatibilityStatusDetailWindow(_compatibilityStatusDetail)
         {

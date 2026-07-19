@@ -41,16 +41,23 @@ public static class BrowserShellPresentationPolicy
                 "toolbar-go-command-hidden is accepted for schema compatibility; " +
                 "standard navigation uses the address entry Enter key");
         }
+        if (policy.ToolbarDiagnosticsCommandHidden)
+        {
+            diagnostics.Add(
+                "toolbar-diagnostics-command-hidden is accepted for schema compatibility; " +
+                "diagnostics are opened from the shell settings/help hub");
+        }
 
+        var addressEntryVisible = !policy.ToolbarAddressEntryHidden;
         return new BrowserShellPresentationResult(
             new BrowserShellPresentation(
                 PrimaryToolbarVisible: true,
-                AddressEntryVisible: !policy.ToolbarAddressEntryHidden,
+                AddressEntryVisible: addressEntryVisible,
                 HistoryCommandVisible: !policy.ToolbarHistoryCommandHidden,
                 ReloadCommandVisible: !policy.ToolbarReloadCommandHidden,
                 SettingsCommandVisible: !policy.ToolbarSettingsCommandHidden,
-                DiagnosticsCommandVisible: !policy.ToolbarDiagnosticsCommandHidden,
-                CompatibilityStatusVisible: true),
+                DiagnosticsCommandVisible: false,
+                CompatibilityStatusVisible: addressEntryVisible),
             diagnostics);
     }
 }

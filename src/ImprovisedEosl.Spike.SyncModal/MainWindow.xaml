@@ -26,8 +26,6 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" MinWidth="120" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Button x:Name="BackButton"
@@ -72,65 +70,53 @@
                       StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                       Data="{StaticResource ReloadIconGeometry}" />
             </Button>
-            <TextBox x:Name="AddressBox"
-                     Grid.Row="0"
-                     Grid.Column="3"
-                     Margin="0,0,4,0"
-                     Padding="6,4"
+            <Grid x:Name="AddressEntryHost"
+                  Grid.Row="0"
+                  Grid.Column="3"
+                  Margin="0,0,4,0">
+                <TextBox x:Name="AddressBox"
+                     Padding="6,4,138,4"
                      AutomationProperties.AutomationId="AddressBox"
                      AutomationProperties.Name="Address"
                      GotKeyboardFocus="AddressBox_GotKeyboardFocus"
                      PreviewMouseLeftButtonDown="AddressBox_PreviewMouseLeftButtonDown"
                      KeyDown="AddressBox_KeyDown" />
-            <Button x:Name="CompatibilityStatusButton"
-                    Grid.Row="0"
-                    Grid.Column="4"
-                    Margin="0,0,4,0"
-                    Padding="8,5"
-                    MaxWidth="170"
+                <Button x:Name="CompatibilityStatusButton"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,2,3,2"
+                    Padding="6,2"
+                    MinWidth="112"
+                    MaxWidth="132"
+                    MinHeight="24"
                     Style="{StaticResource LabeledCommandButtonStyle}"
                     Click="CompatibilityStatus_Click">
                 <StackPanel Orientation="Horizontal">
                     <Path x:Name="CompatibilityStatusIconPath"
-                          Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
+                          Width="14" Height="14" Margin="0,0,4,0" Stretch="Uniform"
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                           StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                           StrokeLineJoin="Round"
                           Data="{StaticResource CompatibilityOperationalIconGeometry}" />
                     <TextBlock x:Name="CompatibilityStatusText"
                                VerticalAlignment="Center"
+                               FontSize="11"
                                Text="互換: 確認中"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-            </Button>
+                </Button>
+            </Grid>
             <Button x:Name="ApplicationSettingsButton"
                     Grid.Row="0"
-                    Grid.Column="5"
+                    Grid.Column="4"
                     Margin="0,0,4,0"
-                    Style="{StaticResource LabeledCommandButtonStyle}"
-                    Click="ApplicationSettings_Click">
-                <StackPanel Orientation="Horizontal">
-                    <Path Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
-                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                          Data="{StaticResource SettingsIconGeometry}" />
-                    <TextBlock x:Name="ApplicationSettingsText" VerticalAlignment="Center" />
-                </StackPanel>
+                    Style="{StaticResource BrowserCommandButtonStyle}"
+                    Click="ShellHub_Click">
+                <Path Width="20" Height="20" Stretch="Uniform"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Data="{StaticResource SettingsIconGeometry}" />
             </Button>
-            <Button x:Name="DiagnosticsButton"
-                    Grid.Row="0"
-                    Grid.Column="6"
-                    Style="{StaticResource LabeledCommandButtonStyle}"
-                    Click="Diagnostics_Click">
-                <StackPanel Orientation="Horizontal">
-                    <Path Width="18" Height="18" Margin="0,0,6,0" Stretch="Uniform"
-                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          StrokeThickness="2" StrokeLineJoin="Round"
-                          Data="{StaticResource DiagnosticsIconGeometry}" />
-                    <TextBlock x:Name="DiagnosticsText" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-
         </Grid>
 
         <Grid x:Name="ParentWebViewHost" Grid.Row="1">
