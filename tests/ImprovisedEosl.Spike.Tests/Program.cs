@@ -189,6 +189,15 @@ static void RecognizesNavigationAcceleratorShortcuts()
     Equal(
         true,
         NavigationAcceleratorShortcutPolicy.TryGetCommand(
+            Key.F11,
+            Key.None,
+            ModifierKeys.None,
+            out var f11Command));
+    Equal(NavigationAcceleratorCommand.Fullscreen, f11Command);
+
+    Equal(
+        true,
+        NavigationAcceleratorShortcutPolicy.TryGetCommand(
             Key.BrowserBack,
             Key.None,
             ModifierKeys.None,
@@ -222,6 +231,7 @@ static void RecognizesNavigationAcceleratorShortcuts()
     Equal("history-forward", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.HistoryForward));
     Equal("reload", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.Reload));
     Equal("focus-address", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.FocusAddress));
+    Equal("fullscreen", NavigationAcceleratorShortcutPolicy.FormatCommand(NavigationAcceleratorCommand.Fullscreen));
 }
 
 static void ConvertsNativeWindowColorsToColorRef()
@@ -1268,6 +1278,12 @@ static void KeepsToolbarAndKeyboardShellPolicySeparate()
                 "toolbar-reload-command-hidden": true,
                 "keyboard-history-command-disabled": false,
                 "keyboard-reload-command-disabled": true
+              },
+              "functionKeyPolicy": {
+                "f5Reload": false,
+                "f6LocationFocus": false,
+                "f11Fullscreen": false,
+                "f12DevTools": false
               }
             }
             """);
@@ -1278,6 +1294,10 @@ static void KeepsToolbarAndKeyboardShellPolicySeparate()
         Equal(true, loaded.Policy.ToolbarReloadCommandHidden);
         Equal(false, loaded.Policy.KeyboardHistoryCommandDisabled);
         Equal(true, loaded.Policy.KeyboardReloadCommandDisabled);
+        Equal(false, loaded.Policy.FunctionF5ReloadEnabled);
+        Equal(false, loaded.Policy.FunctionF6LocationFocusEnabled);
+        Equal(false, loaded.Policy.FunctionF11FullscreenEnabled);
+        Equal(false, loaded.Policy.FunctionF12DevToolsEnabled);
 
         File.WriteAllText(path, """
             {
@@ -1291,6 +1311,10 @@ static void KeepsToolbarAndKeyboardShellPolicySeparate()
 
         Equal(false, loaded.Policy.ToolbarHistoryCommandHidden);
         Equal(true, loaded.Policy.KeyboardHistoryCommandDisabled);
+        Equal(true, loaded.Policy.FunctionF5ReloadEnabled);
+        Equal(true, loaded.Policy.FunctionF6LocationFocusEnabled);
+        Equal(true, loaded.Policy.FunctionF11FullscreenEnabled);
+        Equal(true, loaded.Policy.FunctionF12DevToolsEnabled);
     }
     finally
     {
@@ -1391,6 +1415,16 @@ static void FallsBackForInvalidBrowserShellPolicy()
         Equal(BrowserShellPolicy.Standard, invalidBoolean.Policy);
         Equal(1, invalidBoolean.Diagnostics.Count);
 
+        File.WriteAllText(path, "{\"version\":1,\"browserShell\":{},\"functionKeyPolicy\":{\"f12DevTools\":\"false\"}}");
+        var invalidFunctionKeyBoolean = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, invalidFunctionKeyBoolean.Policy);
+        Equal(1, invalidFunctionKeyBoolean.Diagnostics.Count);
+
+        File.WriteAllText(path, "{\"version\":1,\"browserShell\":{},\"functionKeyPolicy\":{\"unknown\":false}}");
+        var unknownFunctionKeyProperty = new BrowserShellPolicyStore(path).Load();
+        Equal(BrowserShellPolicy.Standard, unknownFunctionKeyProperty.Policy);
+        Equal(1, unknownFunctionKeyProperty.Diagnostics.Count);
+
         using (var stream = File.Create(path))
         {
             stream.SetLength(BrowserShellPolicyStore.MaxFileBytes + 1L);
@@ -1420,6 +1454,11 @@ static void ExportsCompleteStandardBrowserShellPolicyTemplate()
     Equal(true, template.Contains("\"toolbar-diagnostics-command-hidden\": false", StringComparison.Ordinal));
     Equal(true, template.Contains("\"keyboard-history-command-disabled\": false", StringComparison.Ordinal));
     Equal(true, template.Contains("\"keyboard-reload-command-disabled\": false", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"functionKeyPolicy\"", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"f5Reload\": true", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"f6LocationFocus\": true", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"f11Fullscreen\": true", StringComparison.Ordinal));
+    Equal(true, template.Contains("\"f12DevTools\": true", StringComparison.Ordinal));
 }
 
 static void SavesBrowserShellPolicyFilesAtomically()
@@ -1431,7 +1470,9 @@ static void SavesBrowserShellPolicyFilesAtomically()
         var policy = BrowserShellPolicy.Standard with
         {
             ToolbarPrimaryToolbarHidden = true,
-            KeyboardReloadCommandDisabled = true
+            KeyboardReloadCommandDisabled = true,
+            FunctionF11FullscreenEnabled = false,
+            FunctionF12DevToolsEnabled = false
         };
 
         BrowserShellPolicyStore.SavePolicy(path, policy);
